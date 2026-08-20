@@ -30,94 +30,94 @@ Urutan wajib (dependency berantai), kecuali yang ditandai ⚡ bisa paralel.
   - [x] `VoteError` class + `isVoteError()`
   - [x] 13 kode: `TOKEN_INVALID`, `TOKEN_ALREADY_USED`, `TOKEN_LOCKED`, `ELECTION_NOT_FOUND`, `ELECTION_NOT_STARTED`, `ELECTION_ENDED`, `ALREADY_VOTED`, `CANDIDATE_NOT_FOUND`, `NO_VOTE_SESSION`, `RATE_LIMITED`, `VOTER_NOT_ELIGIBLE`, `INVALID_INPUT`, `EMAIL_SEND_FAILED`
 
-- [ ] **4. `src/lib/vote/schemas.ts`** — zod
-  - [ ] `verifyTokenSchema`: 8 digit, terima `48219037` atau `4821-9037`, simpan normalized
-  - [ ] `castVoteSchema`: candidate_id uuid
+- [x] **4. `src/lib/vote/schemas.ts`** — zod
+  - [x] `verifyTokenSchema`: 8 digit, terima `48219037` atau `4821-9037`, simpan normalized
+  - [x] `castVoteSchema`: candidate_id uuid
 
-- [ ] **5. `src/lib/vote/session.ts`** — cookie vote session
-  - [ ] httpOnly, 1 jam, `secure` di production
-  - [ ] `setVoteSession(token)` / `getVoteSession()` / `clearVoteSession()`
+- [x] **5. `src/lib/vote/session.ts`** — cookie vote session
+  - [x] httpOnly, 1 jam, `secure` di production
+  - [x] `setVoteSession(token)` / `getVoteSession()` / `clearVoteSession()`
 
-- [ ] **6. `src/lib/utils/rate-limit.ts`** — anti bruteforce
-  - [ ] Per-token cap: 5× salah → `TOKEN_LOCKED` (in-memory)
-  - [ ] Global throttle: max 50 gagal/menit seluruh sistem
-  - [ ] ❌ BUKAN per-IP (kiosk mode — 1 IP publik untuk semua laptop)
+- [x] **6. `src/lib/utils/rate-limit.ts`** — anti bruteforce
+  - [x] Per-token cap: 5× salah → `TOKEN_LOCKED` (in-memory)
+  - [x] Global throttle: max 50 gagal/menit seluruh sistem
+  - [x] ❌ BUKAN per-IP (kiosk mode — 1 IP publik untuk semua laptop)
 
-- [ ] ⚡ **7. `src/lib/utils/format.ts`** — bebas dependency, bisa paralel
-  - [ ] `formatToken("48219037") → "4821-9037"`
-  - [ ] `normalizeToken("4821-9037") → "48219037"` (buang dash/spasi)
-  - [ ] `formatDate()` / `formatTime()` (buat email + admin)
+- [x] ⚡ **7. `src/lib/utils/format.ts`** — bebas dependency, bisa paralel
+  - [x] `formatToken("48219037") → "4821-9037"`
+  - [x] `normalizeToken("4821-9037") → "48219037"` (buang dash/spasi)
+  - [x] `formatDate()` / `formatTime()` (buat email + admin)
 
-- [ ] **8. `src/lib/vote/service.ts`** — ⭐ inti business logic (pure, testable)
-  - [ ] `getActiveElection()` — election aktif sesuai waktu
-  - [ ] `verifyToken(token)` — cek valid + lock check + eligible role check
-  - [ ] `getCandidates(electionId)`
-  - [ ] `castVote(token, candidateId)` — transaction atomic:
+- [x] **8. `src/lib/vote/service.ts`** — ⭐ inti business logic (pure, testable)
+  - [x] `getActiveElection()` — election aktif sesuai waktu
+  - [x] `verifyToken(token)` — cek valid + lock check + eligible role check
+  - [x] `getCandidates(electionId)`
+  - [x] `castVote(token, candidateId)` — transaction atomic:
     ```prisma
     updateMany({ where: { token_id, is_used: false }, data: { is_used: true } })
     vote.create({ data: { election_id, voter_id: token.voter_id, candidate_id } })
     ```
-  - [ ] Cek: token valid, belum dipakai, election aktif, kandidat valid, role eligible
+  - [x] Cek: token valid, belum dipakai, election aktif, kandidat valid, role eligible
 
-- [ ] **9. `src/app/actions/voting.ts`** — server actions
-  - [ ] `verifyTokenAction(input)` — 4-langkah pattern (zod → service → error contract → redirect)
-  - [ ] `castVoteAction(input)` — sama, redirect ke `/success`
-  - [ ] `revalidatePath` setelah mutasi
+- [x] **9. `src/app/actions/voting.ts`** — server actions
+  - [x] `verifyTokenAction(input)` — 4-langkah pattern (zod → service → error contract → redirect)
+  - [x] `castVoteAction(input)` — sama, redirect ke `/success`
+  - [x] `revalidatePath` setelah mutasi
 
-- [ ] ⚡ **10. `src/proxy.ts`** — proteksi admin (Next 16, pengganti middleware.ts)
-  - [ ] Matcher: `/admin/:path*`
-  - [ ] Session check → redirect `/login` kalau belum login
-  - [ ] `proxy.ts` di root `src/`, bukan `middleware.ts`
+- [x] ⚡ **10. `src/proxy.ts`** — proteksi admin (Next 16, pengganti middleware.ts)
+  - [x] Matcher: `/admin/:path*` + `/api/admin/:path*`
+  - [x] Session check → redirect `/login` kalau belum login
+  - [x] `proxy.ts` di root `src/`, bukan `middleware.ts`
 
-- [ ] **11. `prisma/seed.ts`** — data test
-  - [ ] 1 election aktif
-  - [ ] 2 kandidat (Figma: Aditya Rahman XI RPL 7, Fawaz XI RPL 7)
-  - [ ] 5 voter (role campuran) + 5 token 8-digit unik
-  - [ ] `npx prisma migrate dev` jalan dulu sebelum seed
+- [x] **11. `prisma/seed.ts`** — data test
+  - [x] 1 election aktif
+  - [x] 2 kandidat (Figma: Aditya Rahman XI RPL 7, Fawaz XI RPL 7)
+  - [x] 5 voter (role campuran) + 5 token 8-digit unik
+  - [x] `npx prisma migrate dev` jalan dulu sebelum seed
 
-- [ ] **12. Vitest setup + unit test** — ✅ DoD Fase 1
-  - [ ] `vitest.config.ts`
-  - [ ] Test: `service.ts` (verify/cast flow, double-vote, token bekas, election mati)
-  - [ ] Test: `format.ts` (formatToken, normalizeToken)
-  - [ ] Test: `schemas.ts` (token dengan/tanpa dash, invalid)
-  - [ ] **DoD:** `tsc` 0 error · `biome check` clean · test hijau · seed jalan
-  - [ ] Manual flow: token valid → vote → success; token bekas ditolak; double-vote ditolak; election mati ditolak; rate limit aktif
+- [x] **12. Vitest setup + unit test** — ✅ DoD Fase 1
+  - [x] `vitest.config.ts`
+  - [x] Test: `service.ts` (verify/cast flow, double-vote, token bekas, election mati)
+  - [x] Test: `format.ts` (formatToken, normalizeToken)
+  - [x] Test: `schemas.ts` (token dengan/tanpa dash, invalid)
+  - [x] **DoD:** `tsc` 0 error · `biome check` clean · test hijau · seed jalan
+  - [x] Manual flow: token valid → vote → success; token bekas ditolak; double-vote ditolak; election mati ditolak; rate limit aktif
 
 ---
 
 ## 🔷 FASE 2 — Admin Panel, Email & Bobot Suara
 
-- [ ] **13. Schema update + migrate**
-  - [ ] `Election.eligible_roles Role[] @default([SISWA])`
-  - [ ] `Election.is_weighted Boolean @default(false)` + `Election.role_weights Json?`
-  - [ ] `Vote.voter_id` FK ke Voter (Hybrid — tersimpan, gak pernah di UI)
-  - [ ] `VoteToken.email_sent_at` + `email_error`
-  - [ ] `EmailLog` model (SENT / FAILED / RESEND / NO_EMAIL)
-  - [ ] `@@unique([voter_id, election_id])` di Vote + VoteToken
-  - [ ] `npx prisma migrate dev`
+- [x] **13. Schema update + migrate**
+  - [x] `Election.eligible_roles Role[] @default([SISWA])`
+  - [x] `Election.is_weighted Boolean @default(false)` + `Election.role_weights Json?`
+  - [x] `Vote.voter_id` FK ke Voter (Hybrid — tersimpan, gak pernah di UI)
+  - [x] `VoteToken.email_sent_at` + `email_error`
+  - [x] `EmailLog` model (SENT / FAILED / RESEND / NO_EMAIL)
+  - [x] `@@unique([voter_id, election_id])` di Vote + VoteToken
+  - [x] `npx prisma migrate dev`
 
-- [ ] **14. Backend admin + email**
-  - [ ] `lib/admin/service.ts` — CRUD election (eligible_roles + role_weights), candidate, voter
-  - [ ] `lib/admin/tokens.ts` — generateTokens(electionId): filter eligible_roles, skip yg sudah punya token, crypto 8-digit
-  - [ ] `lib/admin/weights.ts` — skor terbobot Opsi B: `Σ ((vote_grup / total_grup) × bobot_grup)` + validasi total 100%
-  - [ ] `lib/email/service.ts` — Nodemailer + SMTP Workspace: 1 email = 1 token, delay 100/menit, cap 1.990/hari (queue lanjut besok), retry 2×, catat EmailLog
-  - [ ] `lib/email/templates/token-email.ts` — pure builder → `{ subject, html, text }`:
+- [x] **14. Backend admin + email**
+  - [x] `lib/admin/service.ts` — CRUD election (eligible_roles + role_weights), candidate, voter
+  - [x] `lib/admin/tokens.ts` — generateTokens(electionId): filter eligible_roles, skip yg sudah punya token, crypto 8-digit
+  - [x] `lib/admin/weights.ts` — skor terbobot Opsi B: `Σ ((vote_grup / total_grup) × bobot_grup)` + validasi total 100%
+  - [x] `lib/email/service.ts` — Nodemailer + SMTP Workspace: 1 email = 1 token, delay 100/menit, cap 1.990/hari (queue lanjut besok), retry 2×, catat EmailLog
+  - [x] `lib/email/templates/token-email.ts` — pure builder → `{ subject, html, text }`:
     - table-based + inline styles (Gmail)
     - banner peach + nama sekolah (dari env, ZERO domain hardcoded)
     - token box monospace `XXXX-XXXX` · 3 langkah voting · footer panitia
     - versi text/plain · escaping HTML
-  - [ ] `app/actions/admin.ts` — CRUD + `generateAndSendTokensAction` + `resendTokenEmailAction` + `editVoterEmailAction` + `resendAllAction`
+  - [x] `app/actions/admin.ts` — CRUD + `generateAndSendTokensAction` + `resendTokenEmailAction` + `editVoterEmailAction` + `resendAllAction`
 
-- [ ] **15. Admin UI + Excel**
-  - [ ] `(auth)/login/page.tsx` — Google OAuth
-  - [ ] `(protected)/admin/layout.tsx` — session check + Sidebar
-  - [ ] `dashboard/page.tsx` — statistik + raw & weighted
-  - [ ] `elections/page.tsx` — CRUD + RolePicker + WeightInput + generate & kirim token
-  - [ ] `candidates/page.tsx` — CRUD kandidat
-  - [ ] `voters/page.tsx` — daftar + import Excel + email monitoring (filter SENT/FAILED/NO_EMAIL, aksi Edit/Resend/Print)
-  - [ ] `lib/excel/service.ts` — SheetJS: template download + import pemilih + export recap + export token (fallback cetak) — **kontrak kolom: `Nama` · `Email` · `Role` · `Angkatan` (lihat FINAL_PLAN §4.2)**
-  - [ ] Pagination `take/skip` semua list
-  - [ ] **DoD:** login email sekolah · CRUD lengkap · generate+kirim token jalan · skip email gagal (batch lanjut) · edit email → resend · laporan batch (295 SENT, 5 FAILED, 2 NO_EMAIL) · bobot 100% tervalidasi · raw + weighted tampil · import Excel rollback on error
+- [x] **15. Admin UI + Excel**
+  - [x] `(auth)/login/page.tsx` — Google OAuth
+  - [x] `(protected)/admin/layout.tsx` — session check + Sidebar
+  - [x] `dashboard/page.tsx` — statistik + raw & weighted
+  - [x] `elections/page.tsx` — CRUD + RolePicker + WeightInput + generate & kirim token
+  - [x] `candidates/page.tsx` — CRUD kandidat
+  - [x] `voters/page.tsx` — daftar + import Excel + email monitoring (filter SENT/FAILED/NO_EMAIL, aksi Edit/Resend/Print)
+  - [x] `lib/excel/service.ts` — SheetJS: template download + import pemilih + export recap + export token (fallback cetak) — **kontrak kolom: `Nama` · `Email` · `Role` · `Angkatan` (lihat FINAL_PLAN §4.2)**
+  - [x] Pagination `take/skip` semua list
+  - [x] **DoD:** login email sekolah · CRUD lengkap · generate+kirim token jalan · skip email gagal (batch lanjut) · edit email → resend · laporan batch (295 SENT, 5 FAILED, 2 NO_EMAIL) · bobot 100% tervalidasi · raw + weighted tampil · import Excel rollback on error
 
 ---
 

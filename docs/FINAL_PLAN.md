@@ -310,7 +310,7 @@ EMAIL_SEND_FAILED      → pengiriman email token gagal
 
 ## 6. Fase Eksekusi + Definition of Done
 
-### 🔷 FASE 1 — Foundation & Voting Backend Core
+### 🔷 FASE 1 — Foundation & Voting Backend Core ✅ SELESAI (PR #1 merged, 37 test)
 
 | Deliverable | Detail |
 |---|---|
@@ -328,7 +328,7 @@ EMAIL_SEND_FAILED      → pengiriman email token gagal
 
 **✅ DoD:** `tsc` 0 error · Biome clean · unit test hijau · seed jalan · flow manual: token valid → vote → success; token bekas ditolak; double-vote ditolak; election mati ditolak; rate limit aktif.
 
-### 🔷 FASE 2 — Admin Panel & Auth Hardening
+### 🔷 FASE 2 — Admin Panel & Auth Hardening ✅ DONE (PR #2)
 
 | Deliverable | Detail |
 |---|---|
