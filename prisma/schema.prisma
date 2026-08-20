@@ -71,31 +71,39 @@ model Voter {
   generation String? // e.g., "33", "34", "35"
   created_at DateTime    @default(now())
   tokens     VoteToken[]
+  votes      Vote[]
+  email_logs EmailLog[]
 
   @@map("voters")
 }
 
 model Election {
-  election_id String      @id @default(uuid())
-  title       String
-  description String?     @db.Text
-  start_time  DateTime
-  end_time    DateTime
-  is_active   Boolean     @default(true)
-  candidates  Candidate[]
-  tokens      VoteToken[]
-  votes       Vote[]
+  election_id    String    @id @default(uuid())
+  title          String
+  description    String?   @db.Text
+  start_time     DateTime
+  end_time       DateTime
+  is_active      Boolean   @default(true)
+  eligible_roles Role[]    @default([SISWA])
+  is_weighted    Boolean   @default(false)
+  role_weights   Json?
+  candidates     Candidate[]
+  tokens         VoteToken[]
+  votes          Vote[]
 
   @@map("elections")
 }
 
 model VoteToken {
-  token_id    String    @id @default(uuid())
-  voter_id    String
-  election_id String
-  token_code  String    @unique // 6-Digit Numeric Token
-  is_used     Boolean   @default(false)
-  used_at     DateTime?
+  token_id      String    @id @default(uuid())
+  voter_id      String
+  election_id   String
+  token_code    String    @unique // 8-digit numeric token
+  is_used       Boolean   @default(false)
+  used_at       DateTime?
+  email_sent_at DateTime?
+  email_error   String?
+  email_logs    EmailLog[]
 
   voter    Voter    @relation(fields: [voter_id], references: [voter_id], onDelete: Cascade)
   election Election @relation(fields: [election_id], references: [election_id], onDelete: Cascade)
@@ -123,15 +131,33 @@ model Candidate {
 model Vote {
   vote_id      String   @id @default(uuid())
   election_id  String
+  voter_id     String
   candidate_id String
   voted_at     DateTime @default(now())
 
   election  Election  @relation(fields: [election_id], references: [election_id], onDelete: Cascade)
+  voter     Voter     @relation(fields: [voter_id], references: [voter_id], onDelete: Cascade)
   candidate Candidate @relation(fields: [candidate_id], references: [candidate_id], onDelete: Cascade)
 
+  @@unique([voter_id, election_id])
   @@index([election_id])
   @@index([candidate_id])
   @@map("votes")
+}
+
+model EmailLog {
+  log_id   String   @id @default(uuid())
+  token_id String
+  voter_id String
+  email    String
+  status   String // SENT | FAILED | RESEND | NO_EMAIL
+  error    String?
+  sent_at  DateTime @default(now())
+
+  token VoteToken @relation(fields: [token_id], references: [token_id], onDelete: Cascade)
+  voter Voter     @relation(fields: [voter_id], references: [voter_id], onDelete: Cascade)
+
+  @@map("email_logs")
 }
 
 model Verification {

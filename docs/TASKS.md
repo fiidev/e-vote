@@ -9,26 +9,26 @@
 
 Urutan wajib (dependency berantai), kecuali yang ditandai ⚡ bisa paralel.
 
-- [ ] **1. Install dependencies**
+- [x] **1. Install dependencies**
   ```bash
   pnpm add zod nodemailer react-fullscreen
   pnpm add -D vitest @types/nodemailer
   ```
-  - [ ] `zod` — validasi input
-  - [ ] `vitest` — unit test
-  - [ ] `nodemailer` + types — kirim email (Fase 2, tapi install sekarang)
-  - [ ] `react-fullscreen` — wrapper fullscreen (Fase 3)
+  - [x] `zod` — validasi input
+  - [x] `vitest` — unit test
+  - [x] `nodemailer` + types — kirim email (Fase 2, tapi install sekarang)
+  - [x] `react-fullscreen` — wrapper fullscreen (Fase 3)
 
-- [ ] **2. `src/lib/env.ts`** — validasi env saat startup (fail-fast)
-  - [ ] `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`
-  - [ ] `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (App Password)
-  - [ ] `SMTP_RATE_PER_MINUTE=100`, `SMTP_DAILY_CAP=1990`
-  - [ ] `SCHOOL_NAME`, `VOTING_LOCATION`, `FROM_NAME` (email template)
-  - [ ] Throw error jelas kalau ada yang kurang
+- [x] **2. `src/lib/env.ts`** — validasi env saat startup (fail-fast)
+  - [x] `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`
+  - [x] `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (App Password)
+  - [x] `SMTP_RATE_PER_MINUTE=100`, `SMTP_DAILY_CAP=1990`
+  - [x] `SCHOOL_NAME`, `VOTING_LOCATION`, `FROM_NAME` (email template)
+  - [x] Throw error jelas kalau ada yang kurang
 
-- [ ] **3. `src/lib/vote/errors.ts`** — error contract terpusat
-  - [ ] `VoteError` class + `isVoteError()`
-  - [ ] 13 kode: `TOKEN_INVALID`, `TOKEN_ALREADY_USED`, `TOKEN_LOCKED`, `ELECTION_NOT_FOUND`, `ELECTION_NOT_STARTED`, `ELECTION_ENDED`, `ALREADY_VOTED`, `CANDIDATE_NOT_FOUND`, `NO_VOTE_SESSION`, `RATE_LIMITED`, `VOTER_NOT_ELIGIBLE`, `INVALID_INPUT`, `EMAIL_SEND_FAILED`
+- [x] **3. `src/lib/vote/errors.ts`** — error contract terpusat
+  - [x] `VoteError` class + `isVoteError()`
+  - [x] 13 kode: `TOKEN_INVALID`, `TOKEN_ALREADY_USED`, `TOKEN_LOCKED`, `ELECTION_NOT_FOUND`, `ELECTION_NOT_STARTED`, `ELECTION_ENDED`, `ALREADY_VOTED`, `CANDIDATE_NOT_FOUND`, `NO_VOTE_SESSION`, `RATE_LIMITED`, `VOTER_NOT_ELIGIBLE`, `INVALID_INPUT`, `EMAIL_SEND_FAILED`
 
 - [ ] **4. `src/lib/vote/schemas.ts`** — zod
   - [ ] `verifyTokenSchema`: 8 digit, terima `48219037` atau `4821-9037`, simpan normalized
@@ -115,7 +115,7 @@ Urutan wajib (dependency berantai), kecuali yang ditandai ⚡ bisa paralel.
   - [ ] `elections/page.tsx` — CRUD + RolePicker + WeightInput + generate & kirim token
   - [ ] `candidates/page.tsx` — CRUD kandidat
   - [ ] `voters/page.tsx` — daftar + import Excel + email monitoring (filter SENT/FAILED/NO_EMAIL, aksi Edit/Resend/Print)
-  - [ ] `lib/excel/service.ts` — SheetJS: import pemilih + export recap + export token (fallback cetak)
+  - [ ] `lib/excel/service.ts` — SheetJS: template download + import pemilih + export recap + export token (fallback cetak) — **kontrak kolom: `Nama` · `Email` · `Role` · `Angkatan` (lihat FINAL_PLAN §4.2)**
   - [ ] Pagination `take/skip` semua list
   - [ ] **DoD:** login email sekolah · CRUD lengkap · generate+kirim token jalan · skip email gagal (batch lanjut) · edit email → resend · laporan batch (295 SENT, 5 FAILED, 2 NO_EMAIL) · bobot 100% tervalidasi · raw + weighted tampil · import Excel rollback on error
 
