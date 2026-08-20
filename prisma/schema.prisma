@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model AdminUser {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sessions      AdminSession[]
+  accounts      AdminAccount[]
+
+  @@map("admin_user")
+}
+
+model AdminSession {
+  id        String    @id @default(uuid())
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("admin_session")
+}
+
+model AdminAccount {
+  id                    String    @id @default(uuid())
+  userId                String
+  user                  AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issuer                String
+  accountId             String
+  providerId            String
+  accessToken           String?   @db.Text
+  refreshToken          String?   @db.Text
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?   @db.Text
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([issuer, accountId])
+  @@map("admin_account")
+}
+
+enum Role {
+  SISWA
+  OSIS
+  MPK
+  GUKAR
+}
+
+model Voter {
+  voter_id   String      @id @default(uuid())
+  name       String
+  email      String      @unique
+  role       Role        @default(SISWA)
+  generation String? // e.g., "33", "34", "35"
+  created_at DateTime    @default(now())
+  tokens     VoteToken[]
+
+  @@map("voters")
+}
+
+model Election {
+  election_id String      @id @default(uuid())
+  title       String
+  description String?     @db.Text
+  start_time  DateTime
+  end_time    DateTime
+  is_active   Boolean     @default(true)
+  candidates  Candidate[]
+  tokens      VoteToken[]
+  votes       Vote[]
+
+  @@map("elections")
+}
+
+model VoteToken {
+  token_id    String    @id @default(uuid())
+  voter_id    String
+  election_id String
+  token_code  String    @unique // 6-Digit Numeric Token
+  is_used     Boolean   @default(false)
+  used_at     DateTime?
+
+  voter    Voter    @relation(fields: [voter_id], references: [voter_id], onDelete: Cascade)
+  election Election @relation(fields: [election_id], references: [election_id], onDelete: Cascade)
+
+  @@unique([voter_id, election_id])
+  @@map("vote_tokens")
+}
+
+model Candidate {
+  candidate_id     String @id @default(uuid())
+  election_id      String
+  candidate_number Int
+  name             String
+  class_name       String
+  photo_url        String
+  vision           String @db.Text
+  mission          String @db.Text
+
+  election Election @relation(fields: [election_id], references: [election_id], onDelete: Cascade)
+  votes    Vote[]
+
+  @@map("candidates")
+}
+
+model Vote {
+  vote_id      String   @id @default(uuid())
+  election_id  String
+  candidate_id String
+  voted_at     DateTime @default(now())
+
+  election  Election  @relation(fields: [election_id], references: [election_id], onDelete: Cascade)
+  candidate Candidate @relation(fields: [candidate_id], references: [candidate_id], onDelete: Cascade)
+
+  @@index([election_id])
+  @@index([candidate_id])
+  @@map("votes")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
