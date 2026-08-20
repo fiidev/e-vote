@@ -266,6 +266,26 @@ Panitia Pilketos
 
 **✅ DoD template:** render benar di Gmail · versi text/plain ada · token monospace besar format `XXXX-XXXX` · escaping HTML (nama voter berisi `<`/`&` tidak merusak layout) · zero domain hardcoded · vitest snapshot render
 
+### 4.2 Template Excel Import Pemilih (kontrak kolom — PENTING)
+
+> Import butuh struktur `.xlsx` yang **persis sama** — template ini yang di-download dari halaman voters (Fase 2). Parser hanya menerima header persis berikut.
+
+| Kolom (header baris 1) | Wajib? | Contoh | Validasi |
+|---|---|---|---|
+| `Nama` | ✅ | Budi Santoso | non-kosong |
+| `Email` | ✅ | budi@student.smktelkom-mlg.sch.id | format email · unique di DB (duplikat → error baris itu) |
+| `Role` | ❌ default `SISWA` | `SISWA` / `OSIS` / `MPK` / `GUKAR` | case-insensitive (trim + uppercase) · selain 4 nilai → error baris |
+| `Angkatan` | ❌ | 33 / 34 / 35 | opsional, string 2 digit |
+
+**Aturan file:**
+- Baris 1 = header, baris 2+ = data. Header selain kontrak di atas → tolak seluruh file (fail-fast, bukan per-baris).
+- Import = buat `Voter` **sekaligus generate token** (tiap voter wajib punya token) — transaksi tunggal, **rollback semua kalau ada 1 baris error** (tidak ada partial import).
+- Sheet name: `Pemilih`. Kolom di luar 4 header diabaikan (mis. catatan panitia).
+- Template disediakan berisi header + **1 baris contoh** (baris 2) yang harus dihapus — contoh ditandai agar tidak lolos: `Nama` = "Contoh Nama", `Email` = "contoh@email.com" (parser menolak jika `Nama`/`Email` berisi kata "contoh" → tidak akan pernah masuk DB).
+- Download template: route GET `api/admin/voters/template` (dilindungi proxy) → `.xlsx` (SheetJS). Button di `voters/page.tsx`.
+
+**✅ DoD template Excel:** vitest: header pas kontrak → parse ok · header salah → tolak file · role lowercase/trim → normalisasi · email duplikat dalam file → error + rollback · 1 baris error → semua tidak masuk.
+
 ---
 
 ## 5. Error Contract (terpusat)
@@ -323,7 +343,7 @@ EMAIL_SEND_FAILED      → pengiriman email token gagal
 | Admin pages | login, dashboard (raw + weighted), elections (pilih role + bobot), candidates, voters |
 | `components/admin/` | `Sidebar`, `DataTable`, `FormDialog`, `StatCard`, `RolePicker`, `WeightInput` |
 | Pagination | `take/skip` di semua list admin |
-| SheetJS | `lib/excel/service.ts` — import pemilih + export recap + export token (fallback cetak) |
+| SheetJS | `lib/excel/service.ts` — template download (§4.2) + import pemilih + export recap + export token (fallback cetak) — struktur kolom terikat kontrak §4.2 |
 
 **✅ DoD:** Login Google hanya email sekolah · CRUD lengkap · generate + kirim token per email jalan · **skip email gagal (batch tidak dibatalkan)** · **edit email (typo) → resend jalan** · **laporan akhir batch (295 SENT, 5 FAILED, 2 NO_EMAIL)** · export token (fallback cetak) · bobot total 100% tervalidasi · dashboard tampil raw + weighted · logout jalan · proxy redirect · import Excel dengan rollback on error.
 
@@ -396,7 +416,7 @@ Aturan tambahan:
 |---|---|---|
 | `zod` | 1 | Validasi input (standar industri) |
 | `vitest` | 1 | Unit test service layer |
-| `xlsx` (SheetJS) | 2 | Import/export Excel |
+| `xlsx` (SheetJS, CDN resmi) | 2 | Template + import/export Excel — kontrak kolom §4.2 |
 | `chart.js` + `react-chartjs-2` | 4 | Dashboard analytics |
 
 ---
