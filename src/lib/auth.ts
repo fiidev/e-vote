@@ -5,11 +5,21 @@ import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import db from "@/lib/db";
 
-// Whitelist email yang boleh sign in
+// Whitelist email yang boleh sign in (prioritas tertinggi)
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
+
+// Domain sekolah — semua email sekolah boleh akses admin
+const SCHOOL_DOMAIN = "@smktelkom-mlg.sch.id";
+
+function isAuthorizedEmail(email: string): boolean {
+  const normalized = email.toLowerCase();
+  return (
+    ADMIN_EMAILS.includes(normalized) || normalized.endsWith(SCHOOL_DOMAIN)
+  );
+}
 
 export const auth = betterAuth({
   database: prismaAdapter(db, {
@@ -30,8 +40,8 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          // Block sign-up kalau email bukan admin yang terdaftar
-          if (!ADMIN_EMAILS.includes(user.email.toLowerCase())) {
+          // Block sign-up kalau email bukan admin/domain sekolah
+          if (!isAuthorizedEmail(user.email)) {
             throw new APIError("FORBIDDEN", {
               message: "Email ini tidak memiliki akses.",
             });
