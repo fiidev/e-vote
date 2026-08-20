@@ -42,7 +42,10 @@ describe("buildTokenEmail", () => {
   });
 
   it("link verify memakai appUrl tanpa trailing slash", () => {
-    const email = buildTokenEmail({ ...params, appUrl: "http://localhost:3000/" });
+    const email = buildTokenEmail({
+      ...params,
+      appUrl: "http://localhost:3000/",
+    });
     expect(email.html).toContain("http://localhost:3000/verify");
     expect(email.html).not.toContain("http://localhost:3000//verify");
   });

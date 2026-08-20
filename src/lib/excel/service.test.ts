@@ -39,7 +39,12 @@ describe("parseVoterImport", () => {
     const result = parseVoterImport(buffer);
     expect(result.ok).toBe(true);
     expect(result.rows).toHaveLength(2);
-    expect(result.rows[0]).toMatchObject({ name: "Budi", email: "budi@x.id", role: "SISWA", generation: "34" });
+    expect(result.rows[0]).toMatchObject({
+      name: "Budi",
+      email: "budi@x.id",
+      role: "SISWA",
+      generation: "34",
+    });
     // role case-insensitive → OSIS
     expect(result.rows[1].role).toBe("OSIS");
     // email di-lowercase
@@ -142,7 +147,14 @@ describe("Export buffers", () => {
       },
     ]);
     const aoa = sheetToAoa(buffer, "Rekapitulasi");
-    expect(aoa[0]).toEqual(["Pemilihan", "No", "Nama Kandidat", "Kelas", "Suara", "Persentase"]);
+    expect(aoa[0]).toEqual([
+      "Pemilihan",
+      "No",
+      "Nama Kandidat",
+      "Kelas",
+      "Suara",
+      "Persentase",
+    ]);
     expect(aoa[1]).toContain("Budi");
   });
 
