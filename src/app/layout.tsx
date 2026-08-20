@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "E-Pilketos — Pemilihan Ketua OSIS",
   description:
     "Platform voting digital untuk pemilihan ketua OSIS, MPK, dan organisasi sekolah.",
+  icons: {
+    icon: "/images/logo.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

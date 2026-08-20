@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  Radio,
   Users,
   Vote,
 } from "lucide-react";
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/admin/elections", label: "Pemilihan", icon: Vote },
   { href: "/admin/candidates", label: "Kandidat", icon: ListChecks },
   { href: "/admin/voters", label: "Pemilih", icon: Users },
+  { href: "/admin/live-count", label: "Live Count", icon: Radio },
 ] as const;
 
 interface AppSidebarProps {

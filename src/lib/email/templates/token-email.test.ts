@@ -41,18 +41,23 @@ describe("buildTokenEmail", () => {
     expect(email.subject).toContain("Pilketos 2026");
   });
 
-  it("link verify memakai appUrl tanpa trailing slash", () => {
+  it("tidak menampilkan URL domain di email", () => {
     const email = buildTokenEmail({
       ...params,
       appUrl: "http://localhost:3000/",
     });
-    expect(email.html).toContain("http://localhost:3000/verify");
-    expect(email.html).not.toContain("http://localhost:3000//verify");
+    // HTML tidak boleh mengandung URL domain
+    expect(email.html).not.toContain("http://localhost:3000");
+    expect(email.html).not.toContain("https://");
+    // Text tidak boleh mengandung URL
+    expect(email.text).not.toContain("http://localhost:3000");
   });
 
   it("inline style tanpa hardcoded domain", () => {
     const email = buildTokenEmail(params);
     expect(email.html).toContain("style=");
-    expect(email.html).not.toMatch(/https?:\/\/(?!.*verify)/);
+    // Tidak boleh ada URL hardcoded di template
+    expect(email.html).not.toContain("http://");
+    expect(email.html).not.toContain("https://");
   });
 });
