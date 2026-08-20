@@ -1,8 +1,7 @@
 import { ListChecks, MailWarning, Users, Vote } from "lucide-react";
-import { DataTable } from "@/components/admin/data-table";
-import { EmptyState } from "@/components/admin/empty-state";
+import { ElectionTable } from "@/components/admin/election-table";
+import { EmailLogTable } from "@/components/admin/email-log-table";
 import { StatCard } from "@/components/admin/stat-card";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -11,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import db from "@/lib/db";
-import { formatDate, formatToken } from "@/lib/utils/format";
 
 /**
  * Dashboard admin — ringkasan angka + aktivitas terakhir.
@@ -73,48 +71,7 @@ export default async function AdminDashboardPage() {
           <CardDescription>Daftar pemilihan dan progresnya.</CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            columns={[
-              {
-                key: "title",
-                header: "Judul",
-                cell: (e) => (
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{e.title}</span>
-                    {e.is_active ? (
-                      <Badge
-                        variant="default"
-                        className="bg-primary text-primary-foreground"
-                      >
-                        Aktif
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">Selesai</Badge>
-                    )}
-                  </div>
-                ),
-              },
-              {
-                key: "window",
-                header: "Jadwal",
-                cell: (e) => (
-                  <span className="text-sm text-ink-muted">
-                    {formatDate(e.start_time)} — {formatDate(e.end_time)}
-                  </span>
-                ),
-              },
-              {
-                key: "candidates",
-                header: "Kandidat",
-                cell: (e) => e._count.candidates,
-              },
-              { key: "tokens", header: "Token", cell: (e) => e._count.tokens },
-              { key: "votes", header: "Suara", cell: (e) => e._count.votes },
-            ]}
-            rows={elections}
-            keyFn={(e) => e.election_id}
-            empty={<EmptyState title="Belum ada pemilihan" />}
-          />
+          <ElectionTable elections={elections} />
         </CardContent>
       </Card>
 
@@ -126,63 +83,7 @@ export default async function AdminDashboardPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DataTable
-            columns={[
-              {
-                key: "email",
-                header: "Email",
-                cell: (l) => (
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{l.email}</p>
-                    <p className="truncate text-xs text-ink-muted">
-                      {l.voter?.name ?? "—"}
-                    </p>
-                  </div>
-                ),
-              },
-              {
-                key: "token",
-                header: "Token",
-                cell: (l) => (
-                  <span className="font-mono text-sm">
-                    {formatToken(l.token?.token_code ?? "")}
-                  </span>
-                ),
-              },
-              {
-                key: "status",
-                header: "Status",
-                cell: (l) => (
-                  <Badge
-                    variant={
-                      l.status === "SENT" || l.status === "RESEND"
-                        ? "default"
-                        : "destructive"
-                    }
-                    className={
-                      l.status === "SENT" || l.status === "RESEND"
-                        ? "bg-primary text-primary-foreground"
-                        : ""
-                    }
-                  >
-                    {l.status === "RESEND" ? "Kirim Ulang" : l.status}
-                  </Badge>
-                ),
-              },
-              {
-                key: "sent_at",
-                header: "Waktu",
-                cell: (l) => (
-                  <span className="text-sm text-ink-muted">
-                    {formatDate(l.sent_at)}
-                  </span>
-                ),
-              },
-            ]}
-            rows={logs}
-            keyFn={(l) => l.log_id}
-            empty={<EmptyState title="Belum ada email terkirim" />}
-          />
+          <EmailLogTable logs={logs} />
         </CardContent>
       </Card>
     </div>

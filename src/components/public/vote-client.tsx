@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { castVoteAction } from "@/app/actions/voting";
@@ -23,6 +24,7 @@ export function VoteClient({
 }: {
   candidates: CandidateCardData[];
 }) {
+  const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     castVoteAction,
     undefined,
@@ -39,9 +41,15 @@ export function VoteClient({
 
   useEffect(() => {
     if (state?.error) {
+      // Session expired → redirect otomatis ke verify
+      if (state.error === "NO_VOTE_SESSION") {
+        toast.error(voteErrorMessage(state.error), { id: "vote-error" });
+        router.replace("/verify");
+        return;
+      }
       toast.error(voteErrorMessage(state.error), { id: "vote-error" });
     }
-  }, [state?.error, submitCount]);
+  }, [state?.error, submitCount, router]);
 
   const confirm = () => {
     if (selected) formRef.current?.requestSubmit();
@@ -91,7 +99,7 @@ export function VoteClient({
           <h1 className="font-heading text-6xl font-bold text-cyan-950 tracking-wide">
             Pilih Kandidat
           </h1>
-          <p className="font-heading text-xl font-light text-cyan-950 tracking-wide mt-[77px]">
+          <p className="font-heading text-xl font-light text-cyan-950 tracking-wide mt-2">
             Kenali dulu kandidatnya sebelum vote..
           </p>
         </div>

@@ -1,15 +1,16 @@
 "use client";
 
 import { KeyRound, Loader2, Pencil, Plus, Send, Trash2 } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import { toast } from "sonner";
 import {
-  type ActionState,
   createElectionAction,
   deleteElectionAction,
   generateTokensAction,
   sendTokensEmailAction,
   updateElectionAction,
 } from "@/app/actions/admin";
+import type { ActionState } from "@/types/admin";
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
@@ -47,28 +48,89 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ElectionRow | null>(null);
   const [isWeighted, setIsWeighted] = useState(false);
+  const [isActive, setIsActive] = useState(true);
   const [roleWeights, setRoleWeights] = useState<Record<string, string>>({});
+  // Reset dialog form key setiap kali dialog open/close atau editing berubah,
+  // agar useActionState tidak leak error dari form sebelumnya.
+  const [dialogKey, setDialogKey] = useState(0);
   const [actionState, formAction, isPending] = useActionState(
     editing ? updateElectionAction : createElectionAction,
     initialActionState,
   );
+  const [tokenPending, startTokenTransition] = useTransition();
+  const [emailPending, startEmailTransition] = useTransition();
+
+  // Toast feedback setelah form submit selesai
+  const prevPending = useRef(isPending);
+  useEffect(() => {
+    if (prevPending.current && !isPending) {
+      if (actionState.ok && actionState.message) {
+        toast.success(actionState.message);
+        setDialogOpen(false);
+      } else if (!actionState.ok && actionState.errors?._form) {
+        toast.error(actionState.errors._form[0]);
+      }
+    }
+    prevPending.current = isPending;
+  }, [isPending, actionState]);
+
+  async function handleGenerateTokens(electionId: string) {
+    startTokenTransition(async () => {
+      const formData = new FormData();
+      formData.set("election_id", electionId);
+      const result = await generateTokensAction(formData);
+      if (result.ok) {
+        toast.success(result.message ?? "Token berhasil dibuat.");
+      } else {
+        toast.error(result.errors?._form?.[0] ?? "Gagal membuat token.");
+      }
+    });
+  }
+
+  async function handleSendEmails(electionId: string) {
+    startEmailTransition(async () => {
+      const formData = new FormData();
+      formData.set("election_id", electionId);
+      const result = await sendTokensEmailAction(formData);
+      if (result.ok) {
+        toast.success(result.message ?? "Email berhasil dikirim.");
+      } else {
+        toast.error(result.errors?._form?.[0] ?? "Gagal mengirim email.");
+      }
+    });
+  }
+
+  async function handleDeleteElection(electionId: string, title: string) {
+    const formData = new FormData();
+    formData.set("election_id", electionId);
+    const result = await deleteElectionAction(formData);
+    if (result.ok) {
+      toast.success(result.message ?? `${title} berhasil dihapus.`);
+    } else {
+      toast.error(result.errors?._form?.[0] ?? "Gagal menghapus.");
+    }
+  }
 
   function openCreate() {
     setEditing(null);
     setIsWeighted(false);
+    setIsActive(true);
     setRoleWeights({});
+    setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }
 
   function openEdit(election: ElectionRow) {
     setEditing(election);
     setIsWeighted(election.is_weighted);
+    setIsActive(election.is_active);
     const weights = (election.role_weights ?? {}) as Record<string, number>;
     setRoleWeights(
       Object.fromEntries(
         Object.entries(weights).map(([k, v]) => [k, String(v)]),
       ),
     );
+    setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }
 
@@ -152,28 +214,32 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
             header: "Aksi",
             cell: (e) => (
               <div className="flex flex-wrap gap-1">
-                <form action={generateTokensAction}>
-                  <input
-                    type="hidden"
-                    name="election_id"
-                    value={e.election_id}
-                  />
-                  <Button variant="outline" size="sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  isDisabled={tokenPending}
+                  onPress={() => handleGenerateTokens(e.election_id)}
+                >
+                  {tokenPending ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
                     <KeyRound className="size-4" aria-hidden />
-                    Token
-                  </Button>
-                </form>
-                <form action={sendTokensEmailAction}>
-                  <input
-                    type="hidden"
-                    name="election_id"
-                    value={e.election_id}
-                  />
-                  <Button variant="outline" size="sm">
+                  )}
+                  Token
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  isDisabled={emailPending}
+                  onPress={() => handleSendEmails(e.election_id)}
+                >
+                  {emailPending ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
                     <Send className="size-4" aria-hidden />
-                    Kirim Email
-                  </Button>
-                </form>
+                  )}
+                  Kirim Email
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -182,21 +248,15 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                 >
                   <Pencil className="size-4" aria-hidden />
                 </Button>
-                <form action={deleteElectionAction}>
-                  <input
-                    type="hidden"
-                    name="election_id"
-                    value={e.election_id}
-                  />
-                  <Button
+                <Button
                     variant="ghost"
                     size="icon"
                     aria-label={`Hapus ${e.title}`}
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onPress={() => handleDeleteElection(e.election_id, e.title)}
                   >
                     <Trash2 className="size-4" aria-hidden />
                   </Button>
-                </form>
               </div>
             ),
           },
@@ -218,6 +278,7 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
       />
 
       <FormDialog
+        key={dialogKey}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title={editing ? "Edit Pemilihan" : "Buat Pemilihan"}
@@ -284,11 +345,11 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
 
           <div className="space-y-2">
             <Label>Role yang Berhak Memilih</Label>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {ROLE_OPTIONS.map((role) => (
-                <label
+                <span
                   key={role}
-                  className="flex items-center gap-2 text-sm text-ink"
+                  className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm text-ink transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                 >
                   <Checkbox
                     name="eligible_roles"
@@ -296,9 +357,10 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                     defaultSelected={
                       editing?.eligible_roles.includes(role) ?? role === "SISWA"
                     }
+                    aria-label={`Role ${role}`}
                   />
                   {role}
-                </label>
+                </span>
               ))}
             </div>
           </div>
@@ -306,11 +368,15 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
           <div className="flex items-center gap-2">
             <Switch
               id="is_weighted"
-              name="is_weighted"
               isSelected={isWeighted}
               onChange={setIsWeighted}
             />
             <Label htmlFor="is_weighted">Gunakan sistem bobot per role</Label>
+            <input
+              type="hidden"
+              name="is_weighted"
+              value={isWeighted ? "on" : ""}
+            />
           </div>
 
           {isWeighted ? (
@@ -372,10 +438,29 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
           <div className="flex items-center gap-2">
             <Switch
               id="is_active"
-              name="is_active"
-              defaultSelected={editing?.is_active ?? true}
+              isSelected={isActive}
+              onChange={setIsActive}
             />
             <Label htmlFor="is_active">Aktifkan pemilihan</Label>
+            <input
+              type="hidden"
+              name="is_active"
+              value={isActive ? "on" : ""}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              isDisabled={isPending}
+              onPress={() => setDialogOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button type="submit" isDisabled={isPending}>
+              {isPending ? "Menyimpan…" : "Simpan"}
+            </Button>
           </div>
         </form>
       </FormDialog>
@@ -392,5 +477,3 @@ function toLocalInput(date: Date): string {
 function totalWeight(weights: Record<string, string>): number {
   return Object.values(weights).reduce((acc, v) => acc + (Number(v) || 0), 0);
 }
-
-export { Loader2 };

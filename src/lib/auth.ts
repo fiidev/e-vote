@@ -5,20 +5,13 @@ import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import db from "@/lib/db";
 
-// Whitelist email yang boleh sign in (prioritas tertinggi)
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
 
-// Domain sekolah — semua email sekolah boleh akses admin
-const SCHOOL_DOMAIN = "@smktelkom-mlg.sch.id";
-
 function isAuthorizedEmail(email: string): boolean {
-  const normalized = email.toLowerCase();
-  return (
-    ADMIN_EMAILS.includes(normalized) || normalized.endsWith(SCHOOL_DOMAIN)
-  );
+  return ADMIN_EMAILS.includes(email.toLowerCase());
 }
 
 export const auth = betterAuth({

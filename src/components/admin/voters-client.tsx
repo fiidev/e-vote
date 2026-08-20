@@ -2,15 +2,16 @@
 
 import { FileDown, Pencil, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
-  type ActionState,
   createVoterAction,
   deleteVoterAction,
   importVotersAction,
   resendTokenEmailAction,
   updateVoterAction,
 } from "@/app/actions/admin";
+import type { ActionState } from "@/types/admin";
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
@@ -67,6 +68,9 @@ export function VotersClient({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [editing, setEditing] = useState<VoterRow | null>(null);
+  // Reset dialog form key setiap kali dialog open/close atau editing berubah,
+  // agar useActionState tidak leak error dari form sebelumnya.
+  const [dialogKey, setDialogKey] = useState(0);
   const [actionState, formAction, isPending] = useActionState(
     editing ? updateVoterAction : createVoterAction,
     initialActionState,
@@ -76,18 +80,59 @@ export function VotersClient({
     initialActionState,
   );
 
+  // Toast feedback setelah form voter submit selesai
+  const prevPending = useRef(isPending);
+  useEffect(() => {
+    if (prevPending.current && !isPending) {
+      if (actionState.ok && actionState.message) {
+        toast.success(actionState.message);
+        setDialogOpen(false);
+      } else if (!actionState.ok && actionState.errors?._form) {
+        toast.error(actionState.errors._form[0]);
+      }
+    }
+    prevPending.current = isPending;
+  }, [isPending, actionState]);
+
+  // Toast feedback setelah import selesai
+  const prevImportPending = useRef(importPending);
+  useEffect(() => {
+    if (prevImportPending.current && !importPending) {
+      if (importState.ok && importState.message) {
+        toast.success(importState.message);
+        setImportOpen(false);
+      } else if (!importState.ok && importState.errors?.file) {
+        toast.error(importState.errors.file[0]);
+      }
+    }
+    prevImportPending.current = importPending;
+  }, [importPending, importState]);
+
   const [selectedElection, setSelectedElection] = useState(
     electionOptions[0]?.election_id ?? "",
   );
 
   function openCreate() {
     setEditing(null);
+    setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }
 
   function openEdit(voter: VoterRow) {
     setEditing(voter);
+    setDialogKey((k) => k + 1);
     setDialogOpen(true);
+  }
+
+  async function handleDelete(voterId: string, name: string) {
+    const formData = new FormData();
+    formData.set("voter_id", voterId);
+    const result = await deleteVoterAction(formData);
+    if (result.ok) {
+      toast.success(result.message ?? `${name} berhasil dihapus.`);
+    } else {
+      toast.error(result.errors?._form?.[0] ?? "Gagal menghapus.");
+    }
   }
 
   function updateParam(key: string, value: string) {
@@ -121,6 +166,7 @@ export function VotersClient({
             defaultValue={search}
             placeholder="Cari nama / email…"
             className="w-64"
+            aria-label="Cari pemilih berdasarkan nama atau email"
           />
           <Button type="submit" variant="outline">
             Cari
@@ -133,8 +179,12 @@ export function VotersClient({
             updateParam("status", String(key ?? "ALL"))
           }
           placeholder="Semua status"
+          aria-label="Filter status email"
         >
-          <SelectTrigger className="w-44" />
+          <SelectTrigger
+            className="w-44"
+            aria-label="Filter berdasarkan status email"
+          />
           <SelectContent>
             <SelectItem id="ALL">Semua status</SelectItem>
             <SelectItem id="SENT">Terkirim</SelectItem>
@@ -148,8 +198,12 @@ export function VotersClient({
             selectedKey={selectedElection}
             onSelectionChange={(key) => setSelectedElection(String(key ?? ""))}
             placeholder="Pilih pemilihan"
+            aria-label="Pilih pemilihan untuk export token"
           >
-            <SelectTrigger className="w-52" />
+            <SelectTrigger
+              className="w-52"
+              aria-label="Pilih pemilihan untuk export"
+            />
             <SelectContent>
               {electionOptions.map((e) => (
                 <SelectItem key={e.election_id} id={e.election_id}>
@@ -299,17 +353,15 @@ export function VotersClient({
                 >
                   <Pencil className="size-4" aria-hidden />
                 </Button>
-                <form action={deleteVoterAction}>
-                  <input type="hidden" name="voter_id" value={v.voter_id} />
-                  <Button
+                <Button
                     variant="ghost"
                     size="icon"
                     aria-label={`Hapus ${v.name}`}
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onPress={() => handleDelete(v.voter_id, v.name)}
                   >
                     <Trash2 className="size-4" aria-hidden />
                   </Button>
-                </form>
               </div>
             ),
           },
@@ -350,6 +402,7 @@ export function VotersClient({
 
       {/* Form tambah/edit voter */}
       <FormDialog
+        key={dialogKey}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title={editing ? "Edit Pemilih" : "Tambah Pemilih"}
@@ -411,6 +464,20 @@ export function VotersClient({
               placeholder="34"
             />
           </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              isDisabled={isPending}
+              onPress={() => setDialogOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button type="submit" isDisabled={isPending}>
+              {isPending ? "Menyimpan…" : "Simpan"}
+            </Button>
+          </div>
         </form>
       </FormDialog>
 
@@ -420,7 +487,6 @@ export function VotersClient({
         onOpenChange={setImportOpen}
         title="Import Pemilih dari Excel"
         description="Format: Nama | Email | Role | Angkatan — unduh template untuk contoh."
-        submitLabel="Import"
         isSubmitting={importPending}
       >
         <form action={importAction} className="space-y-4">
@@ -439,6 +505,20 @@ export function VotersClient({
             </a>{" "}
             — seluruh file ditolak jika ada satu baris bermasalah (rollback).
           </p>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              isDisabled={importPending}
+              onPress={() => setImportOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button type="submit" isDisabled={importPending}>
+              {importPending ? "Mengimpor…" : "Import"}
+            </Button>
+          </div>
         </form>
       </FormDialog>
     </div>

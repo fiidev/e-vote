@@ -40,7 +40,6 @@ export function buildTokenEmail(params: TokenEmailParams): BuiltEmail {
   const schoolName = escapeHtml(params.schoolName);
   const location = escapeHtml(params.location);
   const tokenDisplay = formatToken(params.tokenCode);
-  const voteUrl = `${params.appUrl.replace(/\/$/, "")}/verify`;
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -72,8 +71,8 @@ export function buildTokenEmail(params: TokenEmailParams): BuiltEmail {
                 </table>
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
                   <tr>
-                    <td style="background-color:#00373e;border-radius:8px;">
-                      <a href="${voteUrl}" style="display:inline-block;padding:12px 28px;color:#ffffff;font-size:14px;font-weight:bold;text-decoration:none;">Mulai Voting</a>
+                    <td style="background-color:#00373e;border-radius:8px;padding:12px 28px;">
+                      <p style="margin:0;color:#ffffff;font-size:14px;font-weight:bold;">Buka halaman voting dan masukkan token di atas.</p>
                     </td>
                   </tr>
                 </table>
@@ -97,7 +96,7 @@ export function buildTokenEmail(params: TokenEmailParams): BuiltEmail {
   </body>
 </html>`;
 
-  const text = [
+const text = [
     `${schoolName} — E-Pilketos: ${electionTitle}`,
     "",
     `Halo ${params.voterName},`,
@@ -106,7 +105,7 @@ export function buildTokenEmail(params: TokenEmailParams): BuiltEmail {
     "",
     `TOKEN: ${tokenDisplay}`,
     "",
-    `Buka ${voteUrl} lalu masukkan token tersebut.`,
+    "Buka halaman voting lalu masukkan token tersebut.",
     "Token bersifat RAHASIA — jangan bagikan ke siapa pun.",
     "Token hanya dapat digunakan sekali dan berlaku selama jadwal pemilihan berlangsung.",
     "",

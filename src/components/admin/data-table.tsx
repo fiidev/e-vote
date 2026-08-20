@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import type * as React from "react";
 import { cn } from "@/lib/cn";
 
 export interface DataTableColumn<T> {
@@ -25,7 +18,6 @@ interface DataTableProps<T> {
   empty?: React.ReactNode;
 }
 
-/** Tabel generik berbasis Table shadcn — kolom & cell dikontrol pemanggil. */
 export function DataTable<T>({
   columns,
   rows,
@@ -34,45 +26,51 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   return (
     <div className="overflow-x-auto rounded-xl border border-line bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-surface/60 hover:bg-surface/60">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-surface/60">
             {columns.map((col) => (
-              <TableHead
+              <th
                 key={col.key}
-                className={cn("text-ink-muted", col.headClassName)}
+                className={cn(
+                  "h-10 px-2 text-left font-medium whitespace-nowrap text-ink-muted",
+                  col.headClassName,
+                )}
               >
                 {col.header}
-              </TableHead>
+              </th>
             ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+          </tr>
+        </thead>
+        <tbody>
           {rows.length === 0 ? (
-            <TableRow>
-              <TableCell
+            <tr>
+              <td
                 colSpan={columns.length}
                 className="h-24 text-center text-ink-muted"
               >
                 {empty ?? "Belum ada data."}
-              </TableCell>
-            </TableRow>
+              </td>
+            </tr>
           ) : (
             rows.map((row) => (
-              <TableRow key={keyFn(row)}>
+              <tr
+                key={keyFn(row)}
+                className="border-b transition-colors hover:bg-muted/50"
+              >
                 {columns.map((col) => (
-                  <TableCell
+                  <td
                     key={col.key}
-                    className={cn("text-ink", col.className)}
+                    className={cn("p-2 align-middle text-ink", col.className)}
                   >
                     {col.cell(row)}
-                  </TableCell>
+                  </td>
                 ))}
-              </TableRow>
+              </tr>
             ))
           )}
-        </TableBody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   );
 }

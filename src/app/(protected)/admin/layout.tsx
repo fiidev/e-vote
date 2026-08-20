@@ -27,7 +27,7 @@ export default async function AdminLayout({
       <AppSidebar user={user} />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line px-4">
-          <SidebarTrigger className="-ml-1" />
+          <SidebarTrigger className="-ml-1" aria-label="Toggle sidebar" />
           <Separator
             orientation="vertical"
             className="mr-2 data-[orientation=vertical]:h-4"

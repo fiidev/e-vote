@@ -143,7 +143,7 @@ export function VerifyClient() {
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
-                    maxLength={2}
+                    maxLength={1}
                     value={digit}
                     onChange={(e) => handleChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e.key)}

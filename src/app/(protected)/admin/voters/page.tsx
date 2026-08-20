@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { VotersClient } from "@/components/admin/voters-client";
 import { listVoters } from "@/lib/admin/service";
 import db from "@/lib/db";
@@ -41,13 +42,19 @@ export default async function AdminVotersPage({ searchParams }: PageProps) {
           Kelola data pemilih, token, dan status pengiriman email.
         </p>
       </div>
-      <VotersClient
-        voters={data.items}
-        total={data.total}
-        page={data.page}
-        totalPages={data.totalPages}
-        electionOptions={electionOptions}
-      />
+      <Suspense
+        fallback={
+          <div className="text-sm text-ink-muted">Memuat data pemilih...</div>
+        }
+      >
+        <VotersClient
+          voters={data.items}
+          total={data.total}
+          page={data.page}
+          totalPages={data.totalPages}
+          electionOptions={electionOptions}
+        />
+      </Suspense>
     </div>
   );
 }
