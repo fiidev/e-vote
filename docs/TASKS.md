@@ -125,18 +125,18 @@ Urutan wajib (dependency berantai), kecuali yang ditandai ⚡ bisa paralel.
 
 > Satu halaman = komposisi 4–7 komponen kecil. Tidak ada file raksasa.
 
-- [ ] **16. Public UI + kiosk mode**
-  - [ ] `app/page.tsx` (root, layout BEBAS) — landing:
+- [x] **16. Public UI + kiosk mode**
+  - [x] `app/page.tsx` (root, layout BEBAS) — landing:
     - `HeroSection` + `BrandLogo` + `CtaButton`
     - `FullscreenWrapper` (react-fullscreen) + `FullscreenButton`
     - `FullscreenGuard` — dialog peringatan saat keluar fullscreen (alert-dialog shadcn)
-  - [ ] `(public)/layout.tsx` — layout kiosk: logo + `StepProgress` (3 dot), `cache-control: no-store`
-  - [ ] `(public)/verify/page.tsx` — `StepProgress` + `TokenForm` (`OtpInput` 2 grup + separator `-`, `ErrorAlert`)
-  - [ ] `(public)/vote/page.tsx` — `StepProgress` + `CandidateGrid` + `CandidateCard` + `VisionMissionDialog` + `ConfirmDialog`
-  - [ ] `(public)/success/page.tsx` — `StepProgress` + `SuccessHeading` + `BackHomeButton` (auto-redirect 8 dtk)
-  - [ ] Semua navigasi pakai `router.replace` (bukan push) — anti tombol Back
-  - [ ] `clearVoteSession()` setelah vote sukses
-  - [ ] **DoD:** match Figma (#00373e, #f9e6d0, radius 70/24/16, shadow OTP) · mobile responsive · error UI sesuai kode error · skeleton loading · OTP auto-focus + paste
+  - [x] `(public)/layout.tsx` — layout kiosk: logo + `StepProgress` (3 dot), `cache-control: no-store`
+  - [x] `(public)/verify/page.tsx` — `StepProgress` + `TokenForm` (`OtpInput` 2 grup + separator `-`, `ErrorAlert`)
+  - [x] `(public)/vote/page.tsx` — `StepProgress` + `CandidateGrid` + `CandidateCard` + `VisionMissionDialog` + `ConfirmDialog`
+  - [x] `(public)/success/page.tsx` — `StepProgress` + `SuccessHeading` + `BackHomeButton` (auto-redirect 8 dtk)
+  - [x] Semua navigasi pakai `router.replace` (bukan push) — anti tombol Back
+  - [x] `clearVoteSession()` setelah vote sukses
+  - [x] **DoD:** match Figma (#00373e, #f9e6d0, radius 70/24/16, shadow OTP) · mobile responsive · error UI sesuai kode error · skeleton loading · OTP auto-focus + paste
 
 ---
 

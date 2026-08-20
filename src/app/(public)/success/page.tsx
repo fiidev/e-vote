@@ -1,16 +1,10 @@
-/**
- * Halaman sukses — placeholder Fase 3 (kiosk UI).
- * TODO Fase 3: konfirmasi suara tercatat + auto-redirect 8 detik.
- */
+import { SuccessClient } from "@/components/public/success-client";
+
+/** Langkah 3 — /success. Halaman statis; session sudah di-clear di action. */
 export default function SuccessPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center p-4">
-      <div className="text-center">
-        <h1 className="text-xl font-bold text-ink">Suara Tercatat</h1>
-        <p className="mt-2 text-sm text-ink-muted">
-          (Kiosk voting — akan diisi pada fase berikutnya)
-        </p>
-      </div>
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 pb-16">
+      <SuccessClient />
     </main>
   );
 }

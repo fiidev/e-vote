@@ -28,6 +28,7 @@
     "react-aria-components": "^1.20.0",
     "react-dom": "19.2.8",
     "react-full-screen": "^1.1.1",
+    "react-fullscreen": "^0.1.0",
     "react-resizable-panels": "^4.12.3",
     "recharts": "3.8.0",
     "shadcn": "^4.18.0",
