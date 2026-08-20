@@ -1,5 +1,5 @@
-import { voteErrorMessage } from "@/components/public/error-messages";
 import { describe, expect, it } from "vitest";
+import { voteErrorMessage } from "@/components/public/error-messages";
 
 describe("voteErrorMessage", () => {
   it("memetakan semua VoteErrorCode ke pesan non-kosong", () => {
@@ -26,6 +26,6 @@ describe("voteErrorMessage", () => {
 
   it("pesan berbahasa Indonesia", () => {
     expect(voteErrorMessage("TOKEN_INVALID")).toContain("Token");
-    expect(voteErrorMessage("ELECTION_ENDED")).toContain("berakhir");
+    expect(voteErrorMessage("ELECTION_ENDED")).toContain("selesai");
   });
 });

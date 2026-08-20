@@ -1,4 +1,3 @@
-/** Kartu kandidat — presentational, dipakai di CandidateGrid (vote). */
 export interface CandidateCardData {
   candidate_id: string;
   candidate_number: number;
@@ -13,10 +12,12 @@ export function CandidateCard({
   candidate,
   onShowVision,
   onSelect,
+  isSelected,
 }: {
   candidate: CandidateCardData;
   onShowVision: (candidate: CandidateCardData) => void;
   onSelect: (candidate: CandidateCardData) => void;
+  isSelected?: boolean;
 }) {
   const initials = candidate.name
     .split(" ")
@@ -26,50 +27,54 @@ export function CandidateCard({
     .toUpperCase();
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-[var(--radius-card)] border border-line bg-peach shadow-[var(--shadow-otp)]">
-      <div className="relative flex aspect-[4/3] items-center justify-center bg-ink/5">
+    <button
+      type="button"
+      onClick={() => onSelect(candidate)}
+      className={`relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex cursor-pointer transition-all text-left ${
+        isSelected
+          ? "ring-4 ring-cyan-950"
+          : "hover:ring-2 hover:ring-cyan-950/40"
+      }`}
+    >
+      <div className="relative w-48 h-64 shrink-0">
         {candidate.photo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
+          // biome-ignore lint/performance/noImgElement: dynamic URL from DB
           <img
             src={candidate.photo_url}
             alt={`Foto ${candidate.name}`}
-            className="size-full object-cover"
+            className="w-48 h-64 rounded-3xl object-cover"
           />
         ) : (
-          <span className="font-heading text-5xl font-bold text-ink/40">
-            {initials}
-          </span>
+          <div className="w-48 h-64 rounded-3xl bg-ink/5 flex items-center justify-center">
+            <span className="font-heading text-5xl font-bold text-ink/40">
+              {initials}
+            </span>
+          </div>
         )}
-        <span className="absolute top-3 left-3 inline-flex size-10 items-center justify-center rounded-full bg-ink font-heading text-lg font-bold text-white">
-          {candidate.candidate_number}
+      </div>
+
+      <div className="flex flex-col justify-center pl-14 pr-6 gap-1">
+        <span className="text-xl font-bold text-cyan-950 font-heading tracking-wide">
+          Kandidat {String(candidate.candidate_number).padStart(2, "0")}
         </span>
-      </div>
+        <h3 className="text-3xl font-bold text-cyan-950 font-heading tracking-wide">
+          {candidate.name}
+        </h3>
+        <p className="text-xl font-normal text-cyan-950 font-heading tracking-wide">
+          {candidate.class_name}
+        </p>
 
-      <div className="flex flex-1 flex-col gap-2 p-4">
-        <div>
-          <h3 className="font-heading text-lg font-bold text-ink">
-            {candidate.name}
-          </h3>
-          <p className="text-sm text-ink-muted">{candidate.class_name}</p>
-        </div>
-
-        <div className="mt-auto flex gap-2 pt-2">
-          <button
-            type="button"
-            onClick={() => onShowVision(candidate)}
-            className="h-10 flex-1 rounded-full border border-line bg-surface text-sm font-medium text-ink transition-colors hover:bg-surface/70"
-          >
-            Visi Misi
-          </button>
-          <button
-            type="button"
-            onClick={() => onSelect(candidate)}
-            className="h-10 flex-1 rounded-full bg-ink text-sm font-semibold text-white transition-colors hover:bg-ink/90"
-          >
-            Pilih
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onShowVision(candidate);
+          }}
+          className="mt-4 h-14 w-60 rounded-full border-2 border-cyan-950 bg-transparent text-cyan-950 text-xl font-semibold font-heading capitalize tracking-wide transition-colors hover:bg-cyan-950/10"
+        >
+          Lihat Visi &amp; Misi
+        </button>
       </div>
-    </article>
+    </button>
   );
 }

@@ -1,7 +1,10 @@
 import nodemailer from "nodemailer";
 import db from "@/lib/db";
+import {
+  type BuiltEmail,
+  buildTokenEmail,
+} from "@/lib/email/templates/token-email";
 import { env } from "@/lib/env";
-import { buildTokenEmail, type BuiltEmail } from "@/lib/email/templates/token-email";
 import { formatToken } from "@/lib/utils/format";
 
 /**
@@ -92,7 +95,9 @@ async function logEmail(
  * Kirim token email secara batch (sequential + delay untuk rate limit).
  * Selalu update token.email_sent_at / email_error per item.
  */
-export async function sendTokenEmails(items: TokenMailItem[]): Promise<EmailSendResult> {
+export async function sendTokenEmails(
+  items: TokenMailItem[],
+): Promise<EmailSendResult> {
   const result: EmailSendResult = {
     sent: 0,
     failed: 0,
@@ -163,13 +168,21 @@ export async function sendTokenEmails(items: TokenMailItem[]): Promise<EmailSend
     } else {
       result.failed++;
       const msg =
-        lastError instanceof Error ? lastError.message : "SMTP error tidak diketahui";
+        lastError instanceof Error
+          ? lastError.message
+          : "SMTP error tidak diketahui";
       result.errors.push({ voterId: item.voter_id, email, error: msg });
       await db.voteToken.update({
         where: { token_id: item.token_id },
         data: { email_error: msg },
       });
-      await logEmail(item.token_id, item.voter_id, email, EMAIL_STATUS.FAILED, msg);
+      await logEmail(
+        item.token_id,
+        item.voter_id,
+        email,
+        EMAIL_STATUS.FAILED,
+        msg,
+      );
     }
 
     // Rate limit: jeda antar email; cap kecil di test / batch kecil

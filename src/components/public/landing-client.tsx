@@ -1,90 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import Image from "next/image";
 import { LinkButton } from "@/components/ui/button";
-import { BrandLogo } from "@/components/public/brand-logo";
-import {
-  FullscreenButton,
-  useFullscreen,
-} from "@/components/public/fullscreen-wrapper";
 
-/**
- * Landing kiosk: hero + tombol mulai + fullscreen dengan guard.
- * Guard: dialog muncul saat keluar fullscreen (termasuk Esc) — kiosk mode
- * harus tetap di layar penuh supaya tidak ada akses ke tab lain.
- */
 export function LandingClient() {
-  const handle = useFullscreen();
-  const [guardOpen, setGuardOpen] = useState(false);
-
-  // Auto-enter fullscreen saat kiosk start (requestFullscreen butuh gestur
-  // user di sebagian browser; di-cover tombol manual juga).
-  useEffect(() => {
-    void handle.enter();
-  }, [handle]);
-
-  // Guard: keluar fullscreen → tampilkan dialog.
-  useEffect(
-    () =>
-      handle.subscribe((active) => {
-        if (!active) setGuardOpen(true);
-      }),
-    [handle],
-  );
-
   return (
-    <main className="flex min-h-dvh flex-col items-center justify-center px-4">
-      <div className="flex w-full max-w-3xl flex-col items-center gap-8 text-center">
-        <div className="flex flex-col items-center gap-4">
-          <BrandLogo size="lg" />
-          <h1 className="font-heading text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl">
-            Pemilihan Ketua OSIS
-            <br />
-            SMK Telkom Malang
-          </h1>
-          <p className="max-w-xl text-base text-ink-muted sm:text-lg">
-            Silakan mulai voting dengan memasukkan token yang sudah dikirim ke
-            email kamu.
-          </p>
+    <main className="flex min-h-dvh items-center justify-center bg-stone-100 overflow-hidden">
+      <div className="relative w-full max-w-[1400px] h-[800px] rounded-[70px] overflow-hidden mx-6">
+        <div className="absolute inset-0 bg-orange-100 rounded-[70px]" />
+
+        <Image
+          src="/images/illustration-2-4003-205.png"
+          alt=""
+          width={384}
+          height={618}
+          className="absolute left-0 bottom-0 w-96 h-[618px] object-cover"
+        />
+
+        <Image
+          src="/images/illustration-1-4003-206.png"
+          alt=""
+          width={384}
+          height={668}
+          className="absolute right-0 top-[132px] w-96 h-[668px] object-cover"
+        />
+
+        <div className="absolute top-[88px] left-1/2 -translate-x-1/2">
+          <Image
+            src="/images/image-1-4004-246.png"
+            alt="Logo E-Pilketos"
+            width={128}
+            height={128}
+            className="size-32 object-cover rounded-full"
+          />
         </div>
 
-        <div className="flex flex-col items-center gap-3 sm:flex-row">
+        <div className="absolute left-1/2 top-[230px] -translate-x-1/2 w-[640px] text-center flex flex-col items-center gap-4">
+          <h1 className="font-heading text-7xl font-bold text-cyan-950 tracking-wide leading-tight">
+            Saatnya Suaramu Jadi Penentu!
+          </h1>
+          <p className="font-heading text-2xl text-cyan-950 tracking-wide max-w-[564px]">
+            Jangan cuma jadi penonton. Yuk, pilih pemimpin OSIS yang siap
+            wujudkan ide-ide seru kamu di sekolah!
+          </p>
           <LinkButton
             href="/verify"
-            size="lg"
-            className="h-14 rounded-full px-10 text-base"
+            className="mt-4 h-14 px-10 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900"
           >
-            Mulai Voting
+            Ayo Pilih
           </LinkButton>
-          <FullscreenButton handle={handle} />
         </div>
       </div>
-
-      <AlertDialog isOpen={guardOpen} onOpenChange={setGuardOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Mode Layar Penuh Dimatikan</AlertDialogTitle>
-            <AlertDialogDescription>
-              Kiosk voting berjalan dalam layar penuh agar pemilih fokus dan
-              tidak mengakses aplikasi lain. Silakan kembali ke layar penuh.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => void handle.enter()}>
-              Kembali ke Layar Penuh
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </main>
   );
 }

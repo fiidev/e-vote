@@ -49,7 +49,9 @@ const isExampleRow = (name: string, email: string) =>
   email.trim().toLowerCase().startsWith("contoh@");
 
 /** Parse buffer excel → rows siap import. Tolak seluruh file jika ada error. */
-export function parseVoterImport(buffer: ArrayBuffer | Buffer): ImportParseResult {
+export function parseVoterImport(
+  buffer: ArrayBuffer | Buffer,
+): ImportParseResult {
   const wb = XLSX.read(buffer, { type: "buffer" });
   const errors: ImportParseResult["errors"] = [];
 
@@ -58,19 +60,30 @@ export function parseVoterImport(buffer: ArrayBuffer | Buffer): ImportParseResul
     return {
       ok: false,
       rows: [],
-      errors: [{ row: 0, message: `Sheet "${IMPORT_SHEET_NAME}" tidak ditemukan.` }],
+      errors: [
+        { row: 0, message: `Sheet "${IMPORT_SHEET_NAME}" tidak ditemukan.` },
+      ],
     };
   }
 
-  const raw = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: "" });
+  const raw = XLSX.utils.sheet_to_json<unknown[]>(ws, {
+    header: 1,
+    raw: false,
+    defval: "",
+  });
   if (raw.length === 0) {
-    return { ok: false, rows: [], errors: [{ row: 0, message: "File kosong." }] };
+    return {
+      ok: false,
+      rows: [],
+      errors: [{ row: 0, message: "File kosong." }],
+    };
   }
 
   const header = raw[0].map((c) => String(c).trim().toLowerCase());
   const expected = IMPORT_HEADER.map((h) => h.toLowerCase());
   const headerOk =
-    header.length === expected.length && expected.every((h, i) => header[i] === h);
+    header.length === expected.length &&
+    expected.every((h, i) => header[i] === h);
   if (!headerOk) {
     return {
       ok: false,
@@ -92,10 +105,17 @@ export function parseVoterImport(buffer: ArrayBuffer | Buffer): ImportParseResul
     const [nameRaw, emailRaw, roleRaw, generationRaw] = raw[i] as unknown[];
 
     const name = String(nameRaw ?? "").trim();
-    const email = String(emailRaw ?? "").trim().toLowerCase();
+    const email = String(emailRaw ?? "")
+      .trim()
+      .toLowerCase();
 
     // Baris kosong penuh → skip (tidak dianggap error)
-    if (!name && !email && !String(roleRaw ?? "").trim() && !String(generationRaw ?? "").trim()) {
+    if (
+      !name &&
+      !email &&
+      !String(roleRaw ?? "").trim() &&
+      !String(generationRaw ?? "").trim()
+    ) {
       continue;
     }
 
