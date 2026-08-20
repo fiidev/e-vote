@@ -81,8 +81,8 @@ describe("Election CRUD", () => {
     );
     await createElection({
       title: "Pilketos 2026",
-      start_time: new Date().toISOString(),
-      end_time: new Date().toISOString(),
+      start_time: new Date(),
+      end_time: new Date(),
       is_active: true,
       is_weighted: false,
       eligible_roles: ["SISWA"],

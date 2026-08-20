@@ -27,9 +27,16 @@ export function CandidateCard({
     .toUpperCase();
 
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(candidate)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(candidate);
+        }
+      }}
       className={`relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex cursor-pointer transition-all text-left ${
         isSelected
           ? "ring-4 ring-cyan-950"
@@ -75,6 +82,6 @@ export function CandidateCard({
           Lihat Visi &amp; Misi
         </button>
       </div>
-    </button>
+    </div>
   );
 }

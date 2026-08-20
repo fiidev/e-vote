@@ -1,25 +1,36 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { LinkButton } from "@/components/ui/button";
 
 export function SuccessClient() {
+  const router = useRouter();
   const [seconds, setSeconds] = useState(8);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setSeconds((value) => {
         if (value <= 1) {
-          clearInterval(timer);
-          window.location.replace("/");
           return 0;
         }
         return value - 1;
       });
     }, 1000);
-    return () => clearInterval(timer);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
+
+  // Redirect ketika countdown habis
+  useEffect(() => {
+    if (seconds === 0) {
+      router.replace("/");
+    }
+  }, [seconds, router]);
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-stone-100 overflow-hidden">

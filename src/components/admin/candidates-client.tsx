@@ -1,13 +1,14 @@
 "use client";
 
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
-  type ActionState,
   createCandidateAction,
   deleteCandidateAction,
   updateCandidateAction,
 } from "@/app/actions/admin";
+import type { ActionState } from "@/types/admin";
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
@@ -49,20 +50,53 @@ export function CandidatesClient({
 }: CandidatesClientProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CandidateRow | null>(null);
+  // Reset dialog form key setiap kali dialog open/close atau editing berubah,
+  // agar useActionState tidak leak error dari form sebelumnya.
+  const [dialogKey, setDialogKey] = useState(0);
   const [actionState, formAction, isPending] = useActionState(
     editing ? updateCandidateAction : createCandidateAction,
     initialActionState,
   );
 
+  // Toast feedback setelah form submit selesai
+  const prevPending = useRef(isPending);
+  useEffect(() => {
+    if (prevPending.current && !isPending) {
+      // Submit baru selesai
+      if (actionState.ok && actionState.message) {
+        toast.success(actionState.message);
+        setDialogOpen(false);
+      } else if (!actionState.ok && actionState.errors?._form) {
+        toast.error(actionState.errors._form[0]);
+      }
+    }
+    prevPending.current = isPending;
+  }, [isPending, actionState]);
+
   function openCreate() {
     setEditing(null);
+    setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }
 
   function openEdit(candidate: CandidateRow) {
     setEditing(candidate);
+    setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }
+
+  async function handleDelete(candidateId: string, name: string) {
+    const formData = new FormData();
+    formData.set("candidate_id", candidateId);
+    const result = await deleteCandidateAction(formData);
+    if (result.ok) {
+      toast.success(result.message ?? `${name} berhasil dihapus.`);
+    } else {
+      toast.error(result.errors?._form?.[0] ?? "Gagal menghapus.");
+    }
+  }
+
+  const hasElections = elections.length > 0;
 
   return (
     <div className="space-y-4">
@@ -70,7 +104,7 @@ export function CandidatesClient({
         <p className="text-sm text-ink-muted">
           {candidates.length} kandidat terdaftar.
         </p>
-        <Button onPress={openCreate}>
+        <Button onPress={openCreate} isDisabled={!hasElections}>
           <Plus className="size-4" aria-hidden />
           Tambah Kandidat
         </Button>
@@ -125,21 +159,15 @@ export function CandidatesClient({
                 >
                   <Pencil className="size-4" aria-hidden />
                 </Button>
-                <form action={deleteCandidateAction}>
-                  <input
-                    type="hidden"
-                    name="candidate_id"
-                    value={c.candidate_id}
-                  />
-                  <Button
+                <Button
                     variant="ghost"
                     size="icon"
                     aria-label={`Hapus ${c.name}`}
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onPress={() => handleDelete(c.candidate_id, c.name)}
                   >
                     <Trash2 className="size-4" aria-hidden />
                   </Button>
-                </form>
               </div>
             ),
           },
@@ -147,20 +175,28 @@ export function CandidatesClient({
         rows={candidates}
         keyFn={(c) => c.candidate_id}
         empty={
-          <EmptyState
-            title="Belum ada kandidat"
-            description="Tambahkan kandidat untuk pemilihan yang sedang berjalan."
-            action={
-              <Button onPress={openCreate}>
-                <Plus className="size-4" aria-hidden />
-                Tambah Kandidat
-              </Button>
-            }
-          />
+          candidates.length === 0 && !hasElections ? (
+            <EmptyState
+              title="Belum ada pemilihan"
+              description="Buat pemilihan terlebih dahulu sebelum menambahkan kandidat."
+            />
+          ) : (
+            <EmptyState
+              title="Belum ada kandidat"
+              description="Tambahkan kandidat untuk pemilihan yang sedang berjalan."
+              action={
+                <Button onPress={openCreate}>
+                  <Plus className="size-4" aria-hidden />
+                  Tambah Kandidat
+                </Button>
+              }
+            />
+          )
         }
       />
 
       <FormDialog
+        key={dialogKey}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title={editing ? "Edit Kandidat" : "Tambah Kandidat"}
@@ -168,16 +204,20 @@ export function CandidatesClient({
         isSubmitting={isPending}
       >
         <form action={formAction} className="space-y-4">
-          <input
-            type="hidden"
-            name="candidate_id"
-            value={editing?.candidate_id ?? ""}
-          />
-          <input
-            type="hidden"
-            name="election_id"
-            value={editing?.election_id ?? elections[0]?.election_id ?? ""}
-          />
+          {editing ? (
+            <>
+              <input
+                type="hidden"
+                name="candidate_id"
+                value={editing.candidate_id}
+              />
+              <input
+                type="hidden"
+                name="election_id"
+                value={editing.election_id}
+              />
+            </>
+          ) : null}
 
           {actionState.errors?._form ? (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -204,8 +244,12 @@ export function CandidatesClient({
                 name="election_id"
                 defaultSelectedKey={elections[0]?.election_id}
                 placeholder="Pilih pemilihan"
+                aria-label="Pilih pemilihan untuk kandidat"
               >
-                <SelectTrigger id="election_select" />
+                <SelectTrigger
+                  id="election_select"
+                  aria-label="Pilih pemilihan"
+                />
                 <SelectContent>
                   {elections.map((e) => (
                     <SelectItem key={e.election_id} id={e.election_id}>
@@ -267,6 +311,20 @@ export function CandidatesClient({
               placeholder="Misi kandidat"
               rows={3}
             />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              isDisabled={isPending}
+              onPress={() => setDialogOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button type="submit" isDisabled={isPending}>
+              {isPending ? "Menyimpan…" : "Simpan"}
+            </Button>
           </div>
         </form>
       </FormDialog>

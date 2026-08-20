@@ -47,7 +47,7 @@
   --color-ink-muted: var(--ink-muted);
   --color-surface: var(--surface);
   --color-peach: var(--peach);
-  --color-cream: var(--peach);
+  --color-cream: #fef7ed;
   --color-line: var(--line);
   --color-dot: var(--dot);
   --color-dot-inactive: var(--dot-inactive);

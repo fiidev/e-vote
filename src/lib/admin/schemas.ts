@@ -26,13 +26,24 @@ const requiredString = (field: string, min = 1) =>
     z.string().min(min, `${field} wajib diisi`),
   );
 
+/**
+ * datetime-local HTML input mengirim "YYYY-MM-DDTHH:MM" (16 karakter, tanpa detik).
+ * Prisma/PostgreSQL butuh DateTime object. Transform ke Date (interpretasi lokal).
+ * Input "2026-08-21T04:13" → Date("2026-08-21T04:13:00").
+ */
 const isoDate = (field: string) =>
   z.preprocess(
-    (value) => (typeof value === "string" ? value : undefined),
-    z
-      .string()
-      .datetime({ offset: true })
-      .or(z.string().min(1, `${field} wajib diisi`)),
+    (value) => {
+      if (typeof value !== "string" || !value.trim()) return undefined;
+      const trimmed = value.trim();
+      const normalized = trimmed.length === 16 ? `${trimmed}:00` : trimmed;
+      const date = new Date(normalized);
+      if (Number.isNaN(date.getTime())) return undefined;
+      return date;
+    },
+    z.date({
+      message: `${field} wajib diisi dengan format tanggal yang valid`,
+    }),
   );
 
 const booleanFromForm = z.preprocess((value) => {

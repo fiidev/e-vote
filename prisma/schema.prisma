@@ -11,12 +11,12 @@ model AdminUser {
   id            String         @id @default(uuid())
   name          String
   email         String         @unique
-  emailVerified DateTime?
+  emailVerified Boolean
   image         String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  sessions      AdminSession[]
-  accounts      AdminAccount[]
+  adminsessions AdminSession[]
+  adminaccounts AdminAccount[]
 
   @@map("admin_user")
 }
@@ -24,7 +24,7 @@ model AdminUser {
 model AdminSession {
   id        String    @id @default(uuid())
   userId    String
-  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminuser AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   token     String    @unique
   expiresAt DateTime
   ipAddress String?
@@ -38,7 +38,7 @@ model AdminSession {
 model AdminAccount {
   id                    String    @id @default(uuid())
   userId                String
-  user                  AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  adminuser             AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   issuer                String
   accountId             String
   providerId            String

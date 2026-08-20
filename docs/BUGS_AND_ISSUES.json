@@ -1,0 +1,231 @@
+{
+  "report": {
+    "title": "E-Vote Codebase Analysis — Bugs & Issues Report",
+    "date": "2026-08-20",
+    "summary": {
+      "unit_tests": "90/90 PASS",
+      "typescript_build": "Compiled OK",
+      "linter_biome": "Clean",
+      "runtime_bugs_found": 10,
+      "ui_ux_issues": 5,
+      "clean_code_issues": 4
+    }
+  },
+  "bugs": [
+    {
+      "id": "BUG-001",
+      "severity": "critical",
+      "title": "useActionState state leak — error dari form sebelumnya bocor ke form baru",
+      "files": [
+        "src/components/admin/candidates-client.tsx",
+        "src/components/admin/elections-client.tsx",
+        "src/components/admin/voters-client.tsx"
+      ],
+      "description": "useActionState dipanggil dengan action yang berubah berdasarkan state editing (null vs objek). Saat editing berubah, useActionState tidak me-reset state, sehingga error dari edit sebelumnya muncul di form create. initialActionState = { ok: false } juga salah secara semantik.",
+      "reproduce": "1. Edit kandidat → submit kosong → error muncul. 2. Tutup dialog → klik Tambah Kandidat → error dari edit masih muncul.",
+      "fix": "Reset state via key prop pada dialog, atau gunakan useEffect untuk reset state saat dialog open/close, atau gunakan pattern berbeda (pisahkan state per form).",
+      "status": "open"
+    },
+    {
+      "id": "BUG-002",
+      "severity": "high",
+      "title": "useSearchParams() tanpa Suspense boundary — bisa error di SSR",
+      "files": [
+        "src/components/admin/voters-client.tsx",
+        "src/app/(protected)/admin/voters/page.tsx"
+      ],
+      "description": "voters-client.tsx menggunakan useSearchParams() di line 65. Next.js mengharuskan useSearchParams dibungkus <Suspense>. Tanpa Suspense, halaman bisa error saat SSR atau de-opt dari static rendering.",
+      "fix": "Bungkus VotersClient dalam <Suspense> di page.tsx, atau gunakan useSearchParams di dalam komponen yang di-suspense.",
+      "status": "open"
+    },
+    {
+      "id": "BUG-003",
+      "severity": "high",
+      "title": "maxLength={2} di OTP input — seharusnya 1 digit per kotak",
+      "files": ["src/components/public/verify-client.tsx"],
+      "line": 146,
+      "description": "Setiap input OTP memiliki maxLength={2}, tapi seharusnya maxLength={1} karena setiap kotak hanya menampung 1 digit. Dengan maxLength=2, user bisa mengetik 2 digit dan digit kedua akan hilang (di-slice), menyebabkan UX yang membingungkan.",
+      "fix": "Ubah maxLength={2} menjadi maxLength={1}.",
+      "status": "open"
+    },
+    {
+      "id": "BUG-004",
+      "severity": "high",
+      "title": "Session expired di vote page — tidak ada redirect otomatis",
+      "files": [
+        "src/components/public/vote-client.tsx",
+        "src/app/actions/voting.ts"
+      ],
+      "description": "Saat vote session cookie expired (>1 jam), user submit vote → server action return NO_VOTE_SESSION → toast error muncul. Tapi user tetap di halaman /vote tanpa redirect. User harus manual kembali ke /verify.",
+      "fix": "Di vote-client.tsx, handle error NO_VOTE_SESSION dengan redirect ke /verify menggunakan router.push().",
+      "status": "open"
+    },
+    {
+      "id": "BUG-005",
+      "severity": "medium",
+      "title": "clearInterval di dalam setState updater — anti-pattern React",
+      "files": ["src/components/public/success-client.tsx"],
+      "lines": "13-14",
+      "description": "clearInterval(timer) dipanggil di dalam setSeconds updater function. Ini adalah side effect di dalam setState callback. React Strict Mode bisa memanggil updater dua kali, menyebabkan race condition pada window.location.replace().",
+      "fix": "Gunakan useEffect dengan cleanup, atau gunakan useRef untuk timer ID dan cleanup di useEffect return.",
+      "status": "open"
+    },
+    {
+      "id": "BUG-006",
+      "severity": "medium",
+      "title": "candidates-client — election_id kosong saat elections array kosong",
+      "files": ["src/components/admin/candidates-client.tsx"],
+      "line": 179,
+      "description": "Saat elections array kosong (belum ada pemilihan), hidden field election_id berisi string kosong. Form akan submit dengan election_id '' yang gagal validasi Zod. Harusnya disable form atau tampilkan warning.",
+      "fix": "Tambah pengecekan: jika elections.length === 0, tampilkan EmptyState dan disable tombol Tambah Kandidat.",
+      "status": "open"
+    },
+    {
+      "id": "BUG-007",
+      "severity": "low",
+      "title": "form-dialog.tsx — props submitLabel dan isSubmitting tidak terpakai",
+      "files": ["src/components/admin/form-dialog.tsx"],
+      "description": "FormDialog menerima props submitLabel dan isSubmitting tetapi tidak pernah menggunakannya. Submit button ada di children yang di-pass dari parent. Props ini dead code.",
+      "fix": "Hapus props yang tidak terpakai, atau gunakan di dalam komponen untuk render footer otomatis.",
+      "status": "open"
+    },
+    {
+      "id": "BUG-008",
+      "severity": "low",
+      "title": "elections-client.tsx — export Loader2 yang tidak digunakan",
+      "files": ["src/components/admin/elections-client.tsx"],
+      "line": 409,
+      "description": "Loader2 di-import dari lucide-react dan di-export ulang di akhir file tapi tidak digunakan di komponen ini. Dead export.",
+      "fix": "Hapus import Loader2 dan export statement.",
+      "status": "open"
+    },
+    {
+      "id": "BUG-009",
+      "severity": "medium",
+      "title": "proxy.ts — hanya cek keberadaan cookie, bukan validitas",
+      "files": ["src/proxy.ts"],
+      "description": "Proxy hanya mengecek apakah cookie better-auth.session_token ada, bukan memvalidasi isinya. Attacker bisa bypass dengan cookie palsu. (Untungnya layout admin juga validasi via getAuthUser(), jadi security masih aman.)",
+      "fix": "Proxy cukup sebagai redirect cepat — documented limitation. Bisa ditingkatkan dengan validasi token di proxy level.",
+      "status": "open"
+    },
+    {
+      "id": "BUG-010",
+      "severity": "medium",
+      "title": "voters-client — selectedElection dropdown tidak memfilter tabel",
+      "files": ["src/components/admin/voters-client.tsx"],
+      "description": "Dropdown 'Pilih pemilihan' (selectedElection state) hanya digunakan untuk URL export, tidak memfilter data tabel. UX membingungkan karena dropdown diletakkan di toolbar tabel tapi tidak mempengaruhi tabel.",
+      "fix": "Tambahkan filter election_id ke query params, atau pisahkan dropdown export ke tempat yang lebih jelas.",
+      "status": "open"
+    }
+  ],
+  "ui_ux_issues": [
+    {
+      "id": "UX-001",
+      "severity": "high",
+      "title": "Dua design system berbeda: public vs admin pages",
+      "description": "Public pages menggunakan hardcoded Tailwind colors (cyan-950, orange-100, stone-100) dan font Bricolage Grotesque. Admin pages menggunakan CSS custom properties (--ink, --peach, --surface) dan font Inter. Warna primary beda: cyan-950 (#083344) vs --ink (#00373e).",
+      "fix": "Unifikasi ke design tokens di globals.css. Public pages harus menggunakan var(--ink) bukan hardcoded colors.",
+      "status": "open"
+    },
+    {
+      "id": "UX-002",
+      "severity": "medium",
+      "title": "globals.css — --color-cream salah mapping ke --peach",
+      "files": ["src/app/globals.css"],
+      "line": 50,
+      "description": "--color-cream: var(--peach) — ini copy-paste error. Cream dan peach jadi nilai yang sama. Harusnya cream punya warna sendiri, atau token ini dihapus.",
+      "status": "open"
+    },
+    {
+      "id": "UX-003",
+      "severity": "high",
+      "title": "Public pages tidak responsif — absolute positioning hardcoded",
+      "files": [
+        "src/components/public/landing-client.tsx",
+        "src/components/public/verify-client.tsx",
+        "src/components/public/vote-client.tsx",
+        "src/components/public/success-client.tsx"
+      ],
+      "description": "Semua halaman public menggunakan positioning absolute dengan pixel value hardcoded (e.g., top-[230px], w-[640px], left-[167px]). Di layar kecil (<1400px), layout akan rusak, konten terpotong, dan muncul scroll horizontal.",
+      "status": "open"
+    },
+    {
+      "id": "UX-004",
+      "severity": "medium",
+      "title": "Tidak ada loading states di halaman admin dan vote",
+      "files": [
+        "src/app/(protected)/admin/dashboard/page.tsx",
+        "src/app/vote/page.tsx"
+      ],
+      "description": "Dashboard dan vote page adalah server components tanpa loading.tsx. Jika query lambat, user melihat layar putih. Tidak ada skeleton atau spinner.",
+      "status": "open"
+    },
+    {
+      "id": "UX-005",
+      "severity": "low",
+      "title": "Tidak ada error boundary di app",
+      "description": "Tidak ada file error.tsx di app router. Jika server component throw unexpected error, Next.js menampilkan halaman error default yang tidak branded.",
+      "status": "open"
+    }
+  ],
+  "clean_code_issues": [
+    {
+      "id": "CC-001",
+      "severity": "low",
+      "title": "vote-client.tsx — form hidden dengan aria-hidden + requestSubmit pattern",
+      "files": ["src/components/public/vote-client.tsx"],
+      "description": "Form disembunyikan dengan className='hidden' aria-hidden='true', lalu submit dipanggil via formRef.current?.requestSubmit(). Pattern ini tidak umum dan bisa membingungkan developer lain.",
+      "status": "open"
+    },
+    {
+      "id": "CC-002",
+      "severity": "low",
+      "title": "Tidak ada client-side form validation",
+      "description": "Semua form menggunakan server actions — validasi hanya terjadi setelah submit. Tidak ada validasi client-side (misalnya real-time validation di input). User harus submit dulu baru lihat error.",
+      "status": "open"
+    },
+    {
+      "id": "CC-003",
+      "severity": "low",
+      "title": "verify-client — 'Hubungi Panitia' text bukan link/button yang accessible",
+      "files": ["src/components/public/verify-client.tsx"],
+      "line": 177,
+      "description": "Text 'Tidak memiliki token? Hubungi Panitia' menggunakan <p> dengan cursor-pointer, tanpa role button, tanpa tabIndex, tanpa keyboard handler. Tidak accessible untuk screen reader dan keyboard-only user.",
+      "status": "open"
+    },
+    {
+      "id": "CC-004",
+      "severity": "low",
+      "title": "nodemailer v9 masih beta",
+      "description": "Package nodemailer menggunakan versi ^9.0.5 yang masih beta. API bisa berubah dan mungkin ada bug yang belum terdeteksi.",
+      "status": "open"
+    }
+  ],
+  "test_gaps": [
+    {
+      "id": "TEST-001",
+      "area": "Server Actions",
+      "description": "Tidak ada test untuk verifyTokenAction, castVoteAction, createElectionAction, dll. Flow end-to-end dari form submission → redirect tidak di-test."
+    },
+    {
+      "id": "TEST-002",
+      "area": "Form UI behavior",
+      "description": "Tidak ada component test untuk verify-client, vote-client, admin client forms. UX flow (error state, loading state, konfirmasi dialog) tidak di-test."
+    },
+    {
+      "id": "TEST-003",
+      "area": "Session flow",
+      "description": "setVoteSession / getVoteSession / clearVoteSession tidak di-test."
+    },
+    {
+      "id": "TEST-004",
+      "area": "Email sending",
+      "description": "sendTokenEmails tidak di-test (butuh mock SMTP)."
+    },
+    {
+      "id": "TEST-005",
+      "area": "Auth flow",
+      "description": "Login Google, auth guard, redirect tidak di-test."
+    }
+  ]
+}
