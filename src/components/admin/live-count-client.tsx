@@ -139,7 +139,7 @@ export function LiveCountClient({ elections, defaultElectionId }: Props) {
           {left && (
             <div className="relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex">
               {left.photo_url ? (
-                <img
+                <Image
                   src={left.photo_url}
                   alt={left.name}
                   className="w-48 h-64 rounded-3xl object-cover"
@@ -176,7 +176,7 @@ export function LiveCountClient({ elections, defaultElectionId }: Props) {
           {right && (
             <div className="relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex flex-row-reverse">
               {right.photo_url ? (
-                <img
+                <Image
                   src={right.photo_url}
                   alt={right.name}
                   className="w-48 h-64 rounded-3xl object-cover"

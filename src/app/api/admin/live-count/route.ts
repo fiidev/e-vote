@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
-      let closed = false;
+      const closed = false;
 
       const push = async () => {
         if (closed) return;
@@ -82,7 +82,7 @@ export async function GET(request: Request) {
       };
 
       await push();
-      const interval = setInterval(push, 2000);
+      const _interval = setInterval(push, 2000);
     },
   });
 

@@ -11,7 +11,6 @@ import {
   resendTokenEmailAction,
   updateVoterAction,
 } from "@/app/actions/admin";
-import type { ActionState } from "@/types/admin";
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
@@ -26,6 +25,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { formatDate, formatToken } from "@/lib/utils/format";
+import type { ActionState } from "@/types/admin";
 
 export interface VoterToken {
   token_id: string;
@@ -354,14 +354,14 @@ export function VotersClient({
                   <Pencil className="size-4" aria-hidden />
                 </Button>
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Hapus ${v.name}`}
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onPress={() => handleDelete(v.voter_id, v.name)}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </Button>
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Hapus ${v.name}`}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onPress={() => handleDelete(v.voter_id, v.name)}
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </Button>
               </div>
             ),
           },

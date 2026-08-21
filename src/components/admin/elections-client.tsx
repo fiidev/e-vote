@@ -1,7 +1,13 @@
 "use client";
 
 import { KeyRound, Loader2, Pencil, Plus, Send, Trash2 } from "lucide-react";
-import { useActionState, useEffect, useRef, useState, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import {
   createElectionAction,
@@ -10,7 +16,6 @@ import {
   sendTokensEmailAction,
   updateElectionAction,
 } from "@/app/actions/admin";
-import type { ActionState } from "@/types/admin";
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
@@ -22,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/utils/format";
+import type { ActionState } from "@/types/admin";
 
 export interface ElectionRow {
   election_id: string;
@@ -249,14 +255,14 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                   <Pencil className="size-4" aria-hidden />
                 </Button>
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Hapus ${e.title}`}
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onPress={() => handleDeleteElection(e.election_id, e.title)}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </Button>
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Hapus ${e.title}`}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onPress={() => handleDeleteElection(e.election_id, e.title)}
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </Button>
               </div>
             ),
           },

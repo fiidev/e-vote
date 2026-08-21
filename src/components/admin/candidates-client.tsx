@@ -8,7 +8,6 @@ import {
   deleteCandidateAction,
   updateCandidateAction,
 } from "@/app/actions/admin";
-import type { ActionState } from "@/types/admin";
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
@@ -23,6 +22,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import type { ActionState } from "@/types/admin";
 
 export interface CandidateRow {
   candidate_id: string;
@@ -160,14 +160,14 @@ export function CandidatesClient({
                   <Pencil className="size-4" aria-hidden />
                 </Button>
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Hapus ${c.name}`}
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onPress={() => handleDelete(c.candidate_id, c.name)}
-                  >
-                    <Trash2 className="size-4" aria-hidden />
-                  </Button>
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Hapus ${c.name}`}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onPress={() => handleDelete(c.candidate_id, c.name)}
+                >
+                  <Trash2 className="size-4" aria-hidden />
+                </Button>
               </div>
             ),
           },

@@ -130,10 +130,13 @@ export async function updateElectionAction(
   return { ok: true, message: "Pemilihan berhasil diperbarui." };
 }
 
-export async function deleteElectionAction(formData: FormData): Promise<ActionState> {
+export async function deleteElectionAction(
+  formData: FormData,
+): Promise<ActionState> {
   await requireAdmin();
   const electionId = formData.get("election_id");
-  if (typeof electionId !== "string") return { ok: false, errors: { _form: ["ID tidak valid."] } };
+  if (typeof electionId !== "string")
+    return { ok: false, errors: { _form: ["ID tidak valid."] } };
   await deleteElection(electionId);
   revalidatePath("/admin/elections");
   return { ok: true, message: "Pemilihan berhasil dihapus." };
@@ -169,10 +172,13 @@ export async function updateCandidateAction(
   return { ok: true, message: "Kandidat berhasil diperbarui." };
 }
 
-export async function deleteCandidateAction(formData: FormData): Promise<ActionState> {
+export async function deleteCandidateAction(
+  formData: FormData,
+): Promise<ActionState> {
   await requireAdmin();
   const candidateId = formData.get("candidate_id");
-  if (typeof candidateId !== "string") return { ok: false, errors: { _form: ["ID tidak valid."] } };
+  if (typeof candidateId !== "string")
+    return { ok: false, errors: { _form: ["ID tidak valid."] } };
   await deleteCandidate(candidateId);
   revalidatePath("/admin/candidates");
   revalidatePath("/admin/elections");
@@ -214,10 +220,13 @@ export async function updateVoterAction(
   return { ok: true, message: "Data pemilih berhasil diperbarui." };
 }
 
-export async function deleteVoterAction(formData: FormData): Promise<ActionState> {
+export async function deleteVoterAction(
+  formData: FormData,
+): Promise<ActionState> {
   await requireAdmin();
   const voterId = formData.get("voter_id");
-  if (typeof voterId !== "string") return { ok: false, errors: { _form: ["ID tidak valid."] } };
+  if (typeof voterId !== "string")
+    return { ok: false, errors: { _form: ["ID tidak valid."] } };
   await deleteVoter(voterId);
   revalidatePath("/admin/voters");
   return { ok: true, message: "Pemilih berhasil dihapus." };
@@ -241,7 +250,9 @@ export async function updateVoterEmailAction(
 
 // ─── Token generation & email ─────────────────────────────────────────────
 
-export async function generateTokensAction(formData: FormData): Promise<ActionState> {
+export async function generateTokensAction(
+  formData: FormData,
+): Promise<ActionState> {
   await requireAdmin();
   const electionId = formData.get("election_id");
   if (typeof electionId !== "string" || !electionId) {
@@ -270,7 +281,9 @@ export async function generateTokensAction(formData: FormData): Promise<ActionSt
   }
 }
 
-export async function sendTokensEmailAction(formData: FormData): Promise<ActionState> {
+export async function sendTokensEmailAction(
+  formData: FormData,
+): Promise<ActionState> {
   await requireAdmin();
   const electionId = formData.get("election_id");
   if (typeof electionId !== "string" || !electionId) {
@@ -289,7 +302,8 @@ export async function sendTokensEmailAction(formData: FormData): Promise<ActionS
   if (pending.length === 0) {
     return {
       ok: true,
-      message: "Tidak ada token yang perlu dikirim. Semua token sudah terkirim atau belum dibuat.",
+      message:
+        "Tidak ada token yang perlu dikirim. Semua token sudah terkirim atau belum dibuat.",
     };
   }
 
@@ -310,11 +324,15 @@ export async function sendTokensEmailAction(formData: FormData): Promise<ActionS
   if (result.sent > 0) parts.push(`${result.sent} terkirim`);
   if (result.failed > 0) parts.push(`${result.failed} gagal`);
   if (result.noEmail > 0) parts.push(`${result.noEmail} tanpa email`);
-  if (result.skippedDueToCap > 0) parts.push(`${result.skippedDueToCap} ditunda (kuota)`);
+  if (result.skippedDueToCap > 0)
+    parts.push(`${result.skippedDueToCap} ditunda (kuota)`);
 
   return {
     ok: result.failed === 0,
-    message: parts.length > 0 ? `Email: ${parts.join(", ")}.` : "Email selesai diproses.",
+    message:
+      parts.length > 0
+        ? `Email: ${parts.join(", ")}.`
+        : "Email selesai diproses.",
   };
 }
 

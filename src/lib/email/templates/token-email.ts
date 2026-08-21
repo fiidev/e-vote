@@ -96,7 +96,7 @@ export function buildTokenEmail(params: TokenEmailParams): BuiltEmail {
   </body>
 </html>`;
 
-const text = [
+  const text = [
     `${schoolName} — E-Pilketos: ${electionTitle}`,
     "",
     `Halo ${params.voterName},`,
