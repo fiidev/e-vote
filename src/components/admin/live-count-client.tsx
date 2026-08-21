@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import {
   Select,
@@ -142,6 +143,8 @@ export function LiveCountClient({ elections, defaultElectionId }: Props) {
                 <Image
                   src={left.photo_url}
                   alt={left.name}
+                  width={192}
+                  height={256}
                   className="w-48 h-64 rounded-3xl object-cover"
                 />
               ) : (
@@ -179,6 +182,8 @@ export function LiveCountClient({ elections, defaultElectionId }: Props) {
                 <Image
                   src={right.photo_url}
                   alt={right.name}
+                  width={192}
+                  height={256}
                   className="w-48 h-64 rounded-3xl object-cover"
                 />
               ) : (
