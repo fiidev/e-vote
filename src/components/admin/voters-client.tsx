@@ -337,6 +337,7 @@ export function VotersClient({
                       value={v.tokens[0].token_id}
                     />
                     <Button
+                      type="submit"
                       variant="ghost"
                       size="icon"
                       aria-label={`Kirim ulang email ${v.name}`}
@@ -446,7 +447,7 @@ export function VotersClient({
               defaultSelectedKey={editing?.role ?? "SISWA"}
               placeholder="Pilih role"
             >
-              <SelectTrigger id="role" />
+              <SelectTrigger id="role" aria-label="Pilih role" />
               <SelectContent>
                 <SelectItem id="SISWA">SISWA</SelectItem>
                 <SelectItem id="OSIS">OSIS</SelectItem>
