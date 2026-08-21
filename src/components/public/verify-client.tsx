@@ -19,7 +19,7 @@ export function VerifyClient() {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const [digits, setDigits] = useState<string[]>(Array(TOKEN_LENGTH).fill(""));
   const [activeIndex, setActiveIndex] = useState(0);
-  const [submitCount, setSubmitCount] = useState(0);
+  const [_submitCount, setSubmitCount] = useState(0);
 
   useEffect(() => {
     if (isPending) setSubmitCount((n) => n + 1);
@@ -29,7 +29,7 @@ export function VerifyClient() {
     if (state?.error) {
       toast.error(voteErrorMessage(state.error), { id: "verify-error" });
     }
-  }, [state?.error, submitCount]);
+  }, [state?.error]);
 
   const token = digits.join("");
 

@@ -33,7 +33,7 @@ export function VoteClient({
   const [selected, setSelected] = useState<CandidateCardData | null>(null);
   const [visionCandidate, setVisionCandidate] =
     useState<CandidateCardData | null>(null);
-  const [submitCount, setSubmitCount] = useState(0);
+  const [_submitCount, setSubmitCount] = useState(0);
 
   useEffect(() => {
     if (isPending) setSubmitCount((n) => n + 1);
@@ -49,7 +49,7 @@ export function VoteClient({
       }
       toast.error(voteErrorMessage(state.error), { id: "vote-error" });
     }
-  }, [state?.error, submitCount, router]);
+  }, [state?.error, router]);
 
   const confirm = () => {
     if (selected) formRef.current?.requestSubmit();
