@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-check:
+    name: Code Quality & Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.20.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm run db:generate
+
+      - name: Lint check (Biome)
+        run: pnpm run lint
+
+      - name: Format check (Biome)
+        run: pnpm run format:check
+
+      - name: Type check (TypeScript)
+        run: pnpm run typecheck
+
+      - name: Run unit tests (Vitest)
+        run: pnpm run test
+
+      - name: Build Next.js application
+        run: pnpm run build
+        env:
+          BETTER_AUTH_SECRET: ci-temporary-secret-for-build-only-32-chars-long
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          DATABASE_URL: postgresql://dummy:dummy@localhost:5432/dummy
