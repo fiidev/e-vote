@@ -19,9 +19,8 @@ export const IMPORT_HEADER = ["Nama", "Email", "Role", "Angkatan"] as const;
 
 export const ROLE_LABELS: Record<Role, string> = {
   SISWA: "SISWA",
-  OSIS: "OSIS",
-  MPK: "MPK",
   GUKAR: "GUKAR",
+  UMUM: "UMUM",
 };
 
 function normalizeRole(raw: string): Role | null {

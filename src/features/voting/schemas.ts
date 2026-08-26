@@ -9,8 +9,20 @@ import { z } from "zod";
 
 export const verifyTokenSchema = z.object({
   token: z.preprocess(
-    (value) => (typeof value === "string" ? value.replace(/[\s-]/g, "") : ""),
-    z.string().regex(/^\d{8}$/, "Token harus 8 digit (contoh: 4821-9037)"),
+    (value) => {
+      if (typeof value !== "string") return "";
+      const clean = value.trim().toUpperCase().replace(/\s+/g, "");
+      // Jika input tanpa strip (misal "MTCK7X92P4W" dengan prefix 3 huruf + 8 chars = 11 chars)
+      if (!clean.includes("-") && clean.length >= 10 && clean.length <= 14) {
+        const codeLen = clean.length - 8;
+        const prefix = clean.slice(0, codeLen);
+        const b1 = clean.slice(codeLen, codeLen + 4);
+        const b2 = clean.slice(codeLen + 4);
+        return `${prefix}-${b1}-${b2}`;
+      }
+      return clean;
+    },
+    z.string().min(8, "Token tidak valid").max(18, "Token tidak valid"),
   ),
 });
 

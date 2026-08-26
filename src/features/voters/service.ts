@@ -10,21 +10,34 @@ const VOTER_PAGE_SIZE = 50;
 export interface VoterListParams {
   page?: number;
   search?: string;
+  electionId?: string;
   emailStatus?: "SENT" | "FAILED" | "NO_EMAIL" | "RESEND" | "ALL";
 }
 
-export async function listVoters(params: VoterListParams = {}) {
+export async function listVoters(
+  params: VoterListParams = {},
+  orgId?: string | null,
+) {
   const page = Math.max(1, params.page ?? 1);
   const take = VOTER_PAGE_SIZE;
   const skip = (page - 1) * take;
 
   const where: Record<string, unknown> = {};
+
+  if (orgId || params.electionId) {
+    where.election = {
+      ...(orgId ? { organizationId: orgId } : {}),
+      ...(params.electionId ? { election_id: params.electionId } : {}),
+    };
+  }
+
   if (params.search) {
     where.OR = [
       { name: { contains: params.search, mode: "insensitive" } },
       { email: { contains: params.search, mode: "insensitive" } },
     ];
   }
+
   switch (params.emailStatus) {
     case "SENT":
     case "RESEND":
@@ -47,6 +60,7 @@ export async function listVoters(params: VoterListParams = {}) {
       skip,
       take,
       include: {
+        election: { select: { title: true, election_id: true } },
         tokens: {
           select: {
             token_id: true,
@@ -70,10 +84,14 @@ export async function listVoters(params: VoterListParams = {}) {
   };
 }
 
-export async function getVoter(voterId: string) {
-  return db.voter.findUnique({
-    where: { voter_id: voterId },
+export async function getVoter(voterId: string, orgId?: string | null) {
+  return db.voter.findFirst({
+    where: {
+      voter_id: voterId,
+      ...(orgId ? { election: { organizationId: orgId } } : {}),
+    },
     include: {
+      election: true,
       tokens: {
         include: { election: { select: { title: true } } },
       },
@@ -81,12 +99,41 @@ export async function getVoter(voterId: string) {
   });
 }
 
-export async function createVoter(data: VoterCreateInput) {
-  return db.voter.create({ data: { ...data, role: data.role as Role } });
+export async function createVoter(
+  data: VoterCreateInput,
+  orgId?: string | null,
+) {
+  if (orgId) {
+    const election = await db.election.findFirst({
+      where: { election_id: data.election_id, organizationId: orgId },
+    });
+    if (!election) throw new Error("ELECTION_NOT_FOUND");
+  }
+
+  return db.voter.create({
+    data: {
+      election_id: data.election_id,
+      name: data.name,
+      email: data.email,
+      role: data.role as Role,
+      generation: data.generation ?? null,
+    },
+  });
 }
 
-export async function updateVoter(data: VoterUpdateInput) {
+export async function updateVoter(
+  data: VoterUpdateInput,
+  orgId?: string | null,
+) {
   const { voter_id, role, ...rest } = data;
+
+  if (orgId) {
+    const voter = await db.voter.findFirst({
+      where: { voter_id, election: { organizationId: orgId } },
+    });
+    if (!voter) throw new Error("VOTER_NOT_FOUND");
+  }
+
   return db.voter.update({
     where: { voter_id },
     data: {
@@ -96,7 +143,14 @@ export async function updateVoter(data: VoterUpdateInput) {
   });
 }
 
-export async function deleteVoter(voterId: string) {
+export async function deleteVoter(voterId: string, orgId?: string | null) {
+  if (orgId) {
+    const voter = await db.voter.findFirst({
+      where: { voter_id: voterId, election: { organizationId: orgId } },
+    });
+    if (!voter) throw new Error("VOTER_NOT_FOUND");
+  }
+
   const [voteCount, usedTokens] = await Promise.all([
     db.vote.count({ where: { voter_id: voterId } }),
     db.voteToken.count({ where: { voter_id: voterId, is_used: true } }),
@@ -107,23 +161,32 @@ export async function deleteVoter(voterId: string) {
   await db.voter.delete({ where: { voter_id: voterId } });
 }
 
-export async function updateVoterEmail(voterId: string, email: string) {
+export async function updateVoterEmail(
+  voterId: string,
+  email: string,
+  orgId?: string | null,
+) {
+  if (orgId) {
+    const voter = await db.voter.findFirst({
+      where: { voter_id: voterId, election: { organizationId: orgId } },
+    });
+    if (!voter) throw new Error("VOTER_NOT_FOUND");
+  }
+
   return db.voter.update({
     where: { voter_id: voterId },
     data: { email: email.toLowerCase().trim() },
   });
 }
 
-export async function getVotersByEmail(email: string) {
-  return db.voter.findUnique({ where: { email } });
-}
-
-export interface EmailLogListParams {
-  limit?: number;
-}
-
-export async function listRecentEmailLogs(params: EmailLogListParams = {}) {
+export async function listRecentEmailLogs(
+  params: { limit?: number } = {},
+  orgId?: string | null,
+) {
   return db.emailLog.findMany({
+    where: orgId
+      ? { voter: { election: { organizationId: orgId } } }
+      : undefined,
     orderBy: { sent_at: "desc" },
     take: params.limit ?? 20,
     include: {

@@ -20,11 +20,12 @@ import { sendTokenEmails } from "@/lib/email/service";
 import { parseVoterImport } from "@/lib/excel/service";
 import type { ActionState } from "@/types/action-state";
 
-async function requireAdmin(): Promise<void> {
+async function requireAuth() {
   const user = await getAuthUser();
   if (!user) {
     redirect("/login");
   }
+  return user;
 }
 
 function fieldErrors(error: z.ZodError): Record<string, string[]> {
@@ -78,15 +79,21 @@ export async function createVoterAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const result = parseForm(voterCreateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
   try {
-    await createVoter(result.data);
+    await createVoter(
+      result.data,
+      user.role === "SUPER_ADMIN" ? null : user.organizationId,
+    );
   } catch (err) {
     if (isUniqueViolation(err)) {
-      return { ok: false, errors: { email: ["Email sudah terdaftar."] } };
+      return {
+        ok: false,
+        errors: { email: ["Email sudah terdaftar dalam pemilihan ini."] },
+      };
     }
     return {
       ok: false,
@@ -103,12 +110,15 @@ export async function updateVoterAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const result = parseForm(voterUpdateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
   try {
-    await updateVoter(result.data);
+    await updateVoter(
+      result.data,
+      user.role === "SUPER_ADMIN" ? null : user.organizationId,
+    );
   } catch (err) {
     if (isUniqueViolation(err)) {
       return {
@@ -130,12 +140,15 @@ export async function updateVoterAction(
 export async function deleteVoterAction(
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const voterId = formData.get("voter_id");
   if (typeof voterId !== "string" || !voterId)
     return { ok: false, errors: { _form: ["ID tidak valid."] } };
   try {
-    await deleteVoter(voterId);
+    await deleteVoter(
+      voterId,
+      user.role === "SUPER_ADMIN" ? null : user.organizationId,
+    );
     revalidatePath("/admin/voters");
     return { ok: true, message: "Pemilih berhasil dihapus." };
   } catch (err) {
@@ -160,12 +173,16 @@ export async function updateVoterEmailAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const result = parseForm(voterEmailUpdateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
   try {
-    await updateVoterEmail(result.data.voter_id, result.data.email);
+    await updateVoterEmail(
+      result.data.voter_id,
+      result.data.email,
+      user.role === "SUPER_ADMIN" ? null : user.organizationId,
+    );
   } catch (err) {
     if (isUniqueViolation(err)) {
       return { ok: false, errors: { email: ["Email sudah terdaftar."] } };
@@ -185,15 +202,20 @@ export async function updateVoterEmailAction(
 export async function resendTokenEmailAction(
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const tokenId = formData.get("token_id");
   if (typeof tokenId !== "string" || !tokenId) {
     return { ok: false, errors: { _form: ["ID token tidak valid."] } };
   }
 
   try {
-    const token = await db.voteToken.findUnique({
-      where: { token_id: tokenId },
+    const token = await db.voteToken.findFirst({
+      where: {
+        token_id: tokenId,
+        ...(user.role !== "SUPER_ADMIN" && user.organizationId
+          ? { election: { organizationId: user.organizationId } }
+          : {}),
+      },
       include: {
         voter: { select: { voter_id: true, name: true, email: true } },
         election: { select: { title: true } },
@@ -245,7 +267,28 @@ export async function importVotersAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
+  const electionId = formData.get("election_id");
+  if (typeof electionId !== "string" || !electionId) {
+    return {
+      ok: false,
+      errors: { file: ["Pilih sesi pemilihan terlebih dahulu."] },
+    };
+  }
+
+  // Verifikasi pemilihan milik org
+  if (user.role !== "SUPER_ADMIN" && user.organizationId) {
+    const election = await db.election.findFirst({
+      where: { election_id: electionId, organizationId: user.organizationId },
+    });
+    if (!election) {
+      return {
+        ok: false,
+        errors: { file: ["Sesi pemilihan tidak ditemukan."] },
+      };
+    }
+  }
+
   const file = formData.get("file");
   if (!(file instanceof File)) {
     return { ok: false, errors: { file: ["File excel wajib diunggah."] } };
@@ -270,6 +313,7 @@ export async function importVotersAction(
       async (tx) => {
         await tx.voter.createMany({
           data: parsed.rows.map((row) => ({
+            election_id: electionId,
             name: row.name,
             email: row.email,
             role: row.role,
@@ -285,7 +329,7 @@ export async function importVotersAction(
         ok: false,
         errors: {
           file: [
-            "Ada email yang sudah terdaftar — tidak ada data yang diimpor (rollback).",
+            "Ada email yang sudah terdaftar dalam pemilihan ini — tidak ada data yang diimpor (rollback).",
           ],
         },
       };

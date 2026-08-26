@@ -2,31 +2,26 @@ import { describe, expect, it } from "vitest";
 import { castVoteSchema, verifyTokenSchema } from "./schemas";
 
 describe("verifyTokenSchema", () => {
-  it("menerima 8 digit murni dan menormalkan", () => {
-    const result = verifyTokenSchema.safeParse({ token: "48219037" });
+  it("menerima format [PREFIX]-[BLOCK1]-[BLOCK2] dan menormalkan ke uppercase", () => {
+    const result = verifyTokenSchema.safeParse({ token: "MTC-K7X9-2P4W" });
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.token).toBe("48219037");
+    if (result.success) expect(result.data.token).toBe("MTC-K7X9-2P4W");
   });
 
-  it("menerima format XXXX-XXXX dan menormalkan", () => {
-    const result = verifyTokenSchema.safeParse({ token: "4821-9037" });
+  it("menerima token tanpa strip dan otomatis memformat", () => {
+    const result = verifyTokenSchema.safeParse({ token: "mtck7x92p4w" });
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.token).toBe("48219037");
+    if (result.success) expect(result.data.token).toBe("MTC-K7X9-2P4W");
   });
 
-  it("menerima token dengan spasi", () => {
-    const result = verifyTokenSchema.safeParse({ token: "4821 9037" });
+  it("menerima token dengan spasi dan menormalkan", () => {
+    const result = verifyTokenSchema.safeParse({ token: "MTC K7X9 2P4W" });
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.token).toBe("48219037");
+    if (result.success) expect(result.data.token).toBe("MTC-K7X9-2P4W");
   });
 
-  it("menolak kurang dari 8 digit", () => {
-    const result = verifyTokenSchema.safeParse({ token: "4821903" });
-    expect(result.success).toBe(false);
-  });
-
-  it("menolak non-digit", () => {
-    const result = verifyTokenSchema.safeParse({ token: "4821-abc7" });
+  it("menolak token terlalu pendek", () => {
+    const result = verifyTokenSchema.safeParse({ token: "MTC" });
     expect(result.success).toBe(false);
   });
 

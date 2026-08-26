@@ -4,22 +4,43 @@ import type {
 } from "@/features/candidates/schemas";
 import db from "@/lib/db";
 
-export async function listCandidates(electionId?: string) {
+export async function listCandidates(
+  electionId?: string,
+  orgId?: string | null,
+) {
   return db.candidate.findMany({
-    where: electionId ? { election_id: electionId } : undefined,
+    where: {
+      ...(electionId ? { election_id: electionId } : {}),
+      ...(orgId ? { election: { organizationId: orgId } } : {}),
+    },
     orderBy: [{ election_id: "asc" }, { candidate_number: "asc" }],
     include: {
-      election: { select: { title: true } },
+      election: { select: { title: true, organizationId: true } },
       _count: { select: { votes: true } },
     },
   });
 }
 
-export async function getCandidate(candidateId: string) {
-  return db.candidate.findUnique({ where: { candidate_id: candidateId } });
+export async function getCandidate(candidateId: string, orgId?: string | null) {
+  return db.candidate.findFirst({
+    where: {
+      candidate_id: candidateId,
+      ...(orgId ? { election: { organizationId: orgId } } : {}),
+    },
+  });
 }
 
-export async function createCandidate(data: CandidateCreateInput) {
+export async function createCandidate(
+  data: CandidateCreateInput,
+  orgId?: string | null,
+) {
+  if (orgId) {
+    const election = await db.election.findFirst({
+      where: { election_id: data.election_id, organizationId: orgId },
+    });
+    if (!election) throw new Error("ELECTION_NOT_FOUND");
+  }
+
   const existing = await db.candidate.findFirst({
     where: {
       election_id: data.election_id,
@@ -38,8 +59,19 @@ export async function createCandidate(data: CandidateCreateInput) {
   });
 }
 
-export async function updateCandidate(data: CandidateUpdateInput) {
+export async function updateCandidate(
+  data: CandidateUpdateInput,
+  orgId?: string | null,
+) {
   const { candidate_id, ...rest } = data;
+
+  if (orgId) {
+    const candidate = await db.candidate.findFirst({
+      where: { candidate_id, election: { organizationId: orgId } },
+    });
+    if (!candidate) throw new Error("CANDIDATE_NOT_FOUND");
+  }
+
   if (rest.candidate_number !== undefined || rest.election_id !== undefined) {
     const current = await db.candidate.findUnique({
       where: { candidate_id },
@@ -70,7 +102,17 @@ export async function updateCandidate(data: CandidateUpdateInput) {
   });
 }
 
-export async function deleteCandidate(candidateId: string) {
+export async function deleteCandidate(
+  candidateId: string,
+  orgId?: string | null,
+) {
+  if (orgId) {
+    const candidate = await db.candidate.findFirst({
+      where: { candidate_id: candidateId, election: { organizationId: orgId } },
+    });
+    if (!candidate) throw new Error("CANDIDATE_NOT_FOUND");
+  }
+
   const voteCount = await db.vote.count({
     where: { candidate_id: candidateId },
   });

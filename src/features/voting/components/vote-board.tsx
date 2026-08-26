@@ -19,7 +19,15 @@ import {
 } from "@/features/voting/components/candidate-card";
 import { voteErrorMessage } from "@/features/voting/error-messages";
 
-export function VoteBoard({ candidates }: { candidates: CandidateCardData[] }) {
+export function VoteBoard({
+  candidates,
+  organizationName,
+  electionTitle,
+}: {
+  candidates: CandidateCardData[];
+  organizationName?: string;
+  electionTitle?: string;
+}) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     castVoteAction,
@@ -95,7 +103,9 @@ export function VoteBoard({ candidates }: { candidates: CandidateCardData[] }) {
             Pilih Kandidat
           </h1>
           <p className="font-heading text-xl font-light text-cyan-950 tracking-wide mt-2">
-            Kenali dulu kandidatnya sebelum vote..
+            {organizationName
+              ? `${electionTitle ?? "Pemilihan"} — ${organizationName}`
+              : "Kenali dulu kandidatnya sebelum vote.."}
           </p>
         </div>
 

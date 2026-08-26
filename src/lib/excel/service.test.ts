@@ -34,7 +34,7 @@ describe("parseVoterImport", () => {
     const buffer = buildImportBuffer([
       ["Nama", "Email", "Role", "Angkatan"],
       ["Budi", "budi@x.id", "SISWA", "34"],
-      ["Ani", "ani@x.id", "osis", "33"],
+      ["Ani", "ani@x.id", "gukar", "33"],
     ]);
     const result = parseVoterImport(buffer);
     expect(result.ok).toBe(true);
@@ -45,8 +45,8 @@ describe("parseVoterImport", () => {
       role: "SISWA",
       generation: "34",
     });
-    // role case-insensitive → OSIS
-    expect(result.rows[1].role).toBe("OSIS");
+    // role case-insensitive → GUKAR
+    expect(result.rows[1].role).toBe("GUKAR");
     // email di-lowercase
     expect(result.rows[1].email).toBe("ani@x.id");
   });

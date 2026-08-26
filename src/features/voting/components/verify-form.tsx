@@ -1,13 +1,28 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { verifyTokenAction } from "@/features/voting/actions";
 import { voteErrorMessage } from "@/features/voting/error-messages";
 
-const TOKEN_LENGTH = 8;
+/**
+ * Format string mentah menjadi format token standar: [PREFIX]-[BLOCK1]-[BLOCK2]
+ * Contoh: "mtc2dqtg7p2" -> "MTC-2DQT-G7P2"
+ */
+function formatTokenInput(raw: string): string {
+  // Hanya ambil huruf dan angka, ubah ke uppercase
+  const cleaned = raw.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  if (cleaned.length <= 3) {
+    return cleaned;
+  }
+  if (cleaned.length <= 7) {
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+  }
+  return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
+}
 
 export function VerifyForm() {
   const [state, formAction, isPending] = useActionState(
@@ -15,10 +30,7 @@ export function VerifyForm() {
     undefined,
   );
 
-  const formRef = useRef<HTMLFormElement>(null);
-  const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
-  const [digits, setDigits] = useState<string[]>(Array(TOKEN_LENGTH).fill(""));
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [tokenInput, setTokenInput] = useState("");
 
   useEffect(() => {
     if (state?.error) {
@@ -26,151 +38,93 @@ export function VerifyForm() {
     }
   }, [state?.error]);
 
-  const token = digits.join("");
-
-  const focusInput = (index: number) => {
-    const clamped = Math.max(0, Math.min(index, TOKEN_LENGTH - 1));
-    setActiveIndex(clamped);
-    inputsRef.current[clamped]?.focus();
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatTokenInput(e.target.value);
+    setTokenInput(formatted);
   };
 
-  const handleChange = (index: number, value: string) => {
-    const digit = value.replace(/\D/g, "").slice(-1);
-    const next = [...digits];
-    next[index] = digit;
-    setDigits(next);
-
-    if (digit && index < TOKEN_LENGTH - 1) {
-      focusInput(index + 1);
-    }
-  };
-
-  const handleKeyDown = (index: number, key: string) => {
-    if (key === "Backspace") {
-      if (!digits[index] && index > 0) {
-        const next = [...digits];
-        next[index - 1] = "";
-        setDigits(next);
-        focusInput(index - 1);
-      } else {
-        const next = [...digits];
-        next[index] = "";
-        setDigits(next);
-      }
-    } else if (key === "ArrowLeft" && index > 0) {
-      focusInput(index - 1);
-    } else if (key === "ArrowRight" && index < TOKEN_LENGTH - 1) {
-      focusInput(index + 1);
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    const pasted = e.clipboardData
-      .getData("text")
-      .replace(/\D/g, "")
-      .slice(0, TOKEN_LENGTH);
-
-    if (!pasted) return;
-
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-
-    const next = Array(TOKEN_LENGTH).fill("");
-    for (let i = 0; i < pasted.length; i++) {
-      next[i] = pasted[i];
-    }
-    setDigits(next);
-    focusInput(Math.min(pasted.length, TOKEN_LENGTH - 1));
+    const pasted = e.clipboardData.getData("text");
+    const formatted = formatTokenInput(pasted);
+    setTokenInput(formatted);
   };
+
+  // Token valid jika memiliki minimal format [PREFIX]-[BLOCK1]-[BLOCK2] (13 karakter: 3+1+4+1+4)
+  const isTokenFilled = tokenInput.replace(/[^A-Z0-9]/g, "").length >= 7;
 
   return (
-    <main className="min-h-dvh flex items-center justify-center bg-stone-100 p-6">
-      <div className="relative w-full max-w-[1400px] min-h-[720px] rounded-[70px] overflow-hidden bg-orange-100">
+    <main className="min-h-dvh flex items-center justify-center bg-stone-100 p-4 sm:p-6">
+      <div className="relative w-full max-w-[1400px] min-h-[720px] rounded-[40px] sm:rounded-[70px] overflow-hidden bg-orange-100 flex flex-col items-center justify-center shadow-sm">
         <Image
           src="/images/illustration-2-4003-205.png"
           alt=""
           width={384}
           height={618}
           priority
-          className="absolute left-0 bottom-0 w-96 h-[618px] object-cover opacity-60"
+          className="absolute left-0 bottom-0 w-96 h-[618px] object-cover opacity-60 pointer-events-none hidden md:block"
         />
 
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 flex items-center">
-          <span className="flex size-7 items-center justify-center rounded-full bg-ink text-white text-xs font-bold">
+        {/* Step Indicator */}
+        <div className="absolute top-8 sm:top-10 left-1/2 -translate-x-1/2 flex items-center">
+          <span className="flex size-7 items-center justify-center rounded-full bg-ink text-white text-xs font-bold shadow-xs">
             1
           </span>
-          <div className="h-1 w-28 bg-ink" />
-          <span className="flex size-7 items-center justify-center rounded-full bg-muted text-ink-muted text-xs font-bold">
+          <div className="h-1 w-20 sm:w-28 bg-ink" />
+          <span className="flex size-7 items-center justify-center rounded-full bg-cyan-950/20 text-cyan-950 text-xs font-bold">
             2
           </span>
         </div>
 
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[851px] px-6 flex flex-col items-center gap-8">
-          <div className="flex flex-col items-center gap-2">
-            <h1 className="font-heading text-6xl font-bold text-cyan-950 tracking-wide text-center">
+        {/* Form Container */}
+        <div className="w-full max-w-[851px] px-6 py-12 flex flex-col items-center gap-8 z-10">
+          <div className="flex flex-col items-center gap-3">
+            <h1 className="font-heading text-4xl sm:text-6xl font-bold text-cyan-950 tracking-wide text-center">
               Masukkan Token Voting
             </h1>
-            <p className="font-heading text-xl font-light text-cyan-950 tracking-wide text-center max-w-[564px]">
-              Silakan masukkan 8 digit token yang kamu dapat untuk memulai
-              proses pemungutan suara.
+            <p className="font-heading text-base sm:text-xl font-light text-cyan-950 tracking-wide text-center max-w-[564px]">
+              Silakan masukkan token voting yang kamu peroleh dari panitia
+              pemilihan.
             </p>
           </div>
 
           <form
-            ref={formRef}
             action={formAction}
-            className="flex flex-col items-center gap-8"
+            className="flex flex-col items-center gap-6 w-full max-w-lg"
           >
-            <div
-              className="flex items-center justify-center gap-3"
-              onPaste={handlePaste}
-            >
-              {digits.map((digit, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: static 8-digit list
-                <div key={i} className="contents">
-                  {i === 4 && (
-                    <span className="text-2xl font-bold text-cyan-950 select-none">
-                      -
-                    </span>
-                  )}
-                  <input
-                    ref={(el) => {
-                      inputsRef.current[i] = el;
-                    }}
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleChange(i, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(i, e.key)}
-                    onFocus={() => setActiveIndex(i)}
-                    className={`w-16 h-20 text-center text-2xl font-bold rounded-lg border-2 outline-none transition-all duration-200 ease-out ${
-                      digit
-                        ? "bg-cyan-950 text-white border-cyan-950 shadow-md scale-102"
-                        : "bg-transparent text-cyan-950 border-cyan-950/20"
-                    } ${
-                      activeIndex === i
-                        ? "ring-4 ring-cyan-950/30 scale-105"
-                        : "hover:border-cyan-950/40"
-                    }`}
-                    aria-label={`Digit token ${i + 1}`}
-                  />
-                </div>
-              ))}
+            <div className="w-full flex flex-col items-center">
+              <input
+                type="text"
+                name="token"
+                value={tokenInput}
+                onChange={handleInputChange}
+                onPaste={handlePaste}
+                placeholder="CONTOH: MTC-2DQT-G7P2"
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck="false"
+                maxLength={16}
+                className="w-full h-20 text-center font-mono text-2xl sm:text-3xl font-bold tracking-widest uppercase rounded-2xl border-2 border-cyan-950/30 bg-white text-cyan-950 placeholder:text-cyan-950/25 placeholder:text-lg sm:placeholder:text-2xl focus:border-cyan-950 focus:ring-4 focus:ring-cyan-950/20 outline-none transition-all duration-200 shadow-sm"
+                aria-label="Token Voting"
+              />
+              <p className="text-xs text-cyan-950/70 mt-2 font-medium">
+                Format:{" "}
+                <span className="font-mono font-semibold">
+                  [KODE ORG]-[BLOK 1]-[BLOK 2]
+                </span>
+              </p>
             </div>
-
-            <input type="hidden" name="token" value={token} />
 
             <Button
               type="submit"
-              isDisabled={isPending || token.length < TOKEN_LENGTH}
-              className="h-14 w-36 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 transition-all duration-200 ease-out active:scale-95 hover:shadow-lg cursor-pointer"
+              isDisabled={isPending || !isTokenFilled}
+              className="h-14 w-44 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 transition-all duration-200 ease-out active:scale-95 hover:shadow-lg cursor-pointer"
             >
               {isPending ? "Memeriksa…" : "Lanjut"}
             </Button>
           </form>
 
-          <p className="text-base font-medium text-cyan-950 underline cursor-pointer hover:text-ink">
+          <p className="text-sm font-medium text-cyan-950 underline cursor-pointer hover:text-ink transition-colors">
             Tidak memiliki token? Hubungi Panitia
           </p>
         </div>

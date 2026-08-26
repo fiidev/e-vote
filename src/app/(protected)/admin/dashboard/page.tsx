@@ -1,4 +1,5 @@
 import { ListChecks, MailWarning, Users, Vote } from "lucide-react";
+import { redirect } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -9,24 +10,33 @@ import {
 import { StatCard } from "@/components/ui/stat-card";
 import { ElectionTable } from "@/features/elections/components/election-table";
 import { EmailLogTable } from "@/features/voters/components/email-log-table";
+import { getAuthUser } from "@/lib/auth";
 import db from "@/lib/db";
 
-/**
- * Dashboard admin — ringkasan angka + aktivitas terakhir.
- * Hanya tampilkan voter_id untuk statistik; data pribadi voter
- * (kecuali nama/email di log) tidak pernah dirender (hybrid anonymity).
- */
 export default async function AdminDashboardPage() {
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
+
+  const orgId = user.role === "SUPER_ADMIN" ? null : user.organizationId;
+
   const [elections, voterCount, voteCount, logs] = await Promise.all([
     db.election.findMany({
+      where: orgId ? { organizationId: orgId } : undefined,
       include: {
         _count: { select: { candidates: true, votes: true, tokens: true } },
       },
       orderBy: { start_time: "desc" },
     }),
-    db.voter.count(),
-    db.vote.count(),
+    db.voter.count({
+      where: orgId ? { election: { organizationId: orgId } } : undefined,
+    }),
+    db.vote.count({
+      where: orgId ? { election: { organizationId: orgId } } : undefined,
+    }),
     db.emailLog.findMany({
+      where: orgId
+        ? { voter: { election: { organizationId: orgId } } }
+        : undefined,
       orderBy: { sent_at: "desc" },
       take: 8,
       include: {

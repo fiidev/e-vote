@@ -20,6 +20,13 @@ export interface ElectionWithCandidates {
   start_time: Date;
   end_time: Date;
   is_active: boolean;
+  organization: {
+    id: string;
+    name: string;
+    code: string;
+    slug: string;
+    logoUrl: string | null;
+  };
   candidates: Candidate[];
 }
 
@@ -34,9 +41,37 @@ type Candidate = {
   mission: string;
 };
 
-/** Ambil pemilu aktif beserta kandidatnya (urut nomor urut). */
-export async function getActiveElection(): Promise<ElectionWithCandidates> {
+/** Ambil pemilu aktif beserta kandidatnya dan info organisasi. */
+export async function getActiveElection(
+  tokenCode?: string | null,
+): Promise<ElectionWithCandidates> {
   const now = new Date();
+
+  if (tokenCode) {
+    const token = await db.voteToken.findUnique({
+      where: { token_code: tokenCode },
+      include: {
+        election: {
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                slug: true,
+                logoUrl: true,
+              },
+            },
+            candidates: { orderBy: { candidate_number: "asc" } },
+          },
+        },
+      },
+    });
+    if (token?.election) {
+      return token.election;
+    }
+  }
+
   const election = await db.election.findFirst({
     where: {
       is_active: true,
@@ -44,6 +79,15 @@ export async function getActiveElection(): Promise<ElectionWithCandidates> {
       end_time: { gte: now },
     },
     include: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          slug: true,
+          logoUrl: true,
+        },
+      },
       candidates: { orderBy: { candidate_number: "asc" } },
     },
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Building2,
   GraduationCap,
   LayoutDashboard,
   ListChecks,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -25,25 +27,36 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import type { AuthUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth-client";
 
-const NAV_ITEMS = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/elections", label: "Pemilihan", icon: Vote },
-  { href: "/admin/candidates", label: "Kandidat", icon: ListChecks },
-  { href: "/admin/voters", label: "Pemilih", icon: Users },
-  { href: "/admin/live-count", label: "Live Count", icon: Radio },
-] as const;
-
 interface AppSidebarProps {
-  user: { name?: string | null; email?: string | null };
+  user: AuthUser;
 }
 
-/** Sidebar admin — nav aktif mengikuti pathname, footer berisi user + logout. */
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const isSuperAdmin = user.role === "SUPER_ADMIN";
+
+  const navItems = [
+    { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    ...(isSuperAdmin
+      ? [
+          {
+            href: "/admin/organizations",
+            label: "Organisasi",
+            icon: Building2,
+          },
+        ]
+      : []),
+    { href: "/admin/elections", label: "Pemilihan", icon: Vote },
+    { href: "/admin/candidates", label: "Kandidat", icon: ListChecks },
+    { href: "/admin/voters", label: "Pemilih", icon: Users },
+    { href: "/admin/live-count", label: "Live Count", icon: Radio },
+  ];
 
   async function handleSignOut() {
     setIsLoggingOut(true);
@@ -67,13 +80,18 @@ export function AppSidebar({ user }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <GraduationCap className="size-4" aria-hidden />
+        <div className="flex items-center gap-2.5 px-2 py-1.5">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white shadow-xs">
+            <GraduationCap className="size-5" aria-hidden />
           </div>
-          <span className="truncate text-sm font-semibold text-ink">
-            E-Pilketos
-          </span>
+          <div className="min-w-0 flex-1">
+            <span className="truncate text-sm font-bold text-ink block">
+              E-Vote
+            </span>
+            <span className="truncate text-[11px] font-medium text-ink-muted block font-mono">
+              {user.organizationName ? user.organizationName : "Super Admin"}
+            </span>
+          </div>
         </div>
       </SidebarHeader>
 
@@ -81,7 +99,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarMenu>
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const active = pathname.startsWith(item.href);
               return (
                 <SidebarMenuItem key={item.href}>
@@ -101,16 +119,26 @@ export function AppSidebar({ user }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="flex flex-col gap-2 px-2 py-1">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-ink">
+        <div className="flex flex-col gap-2.5 px-2 py-1.5">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-stone-200 text-xs font-bold text-ink">
               {(user.name ?? user.email ?? "A")[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-ink">
-                {user.name ?? "Admin"}
+              <div className="flex items-center gap-1.5">
+                <p className="truncate text-xs font-semibold text-ink">
+                  {user.name ?? "Admin"}
+                </p>
+                <Badge
+                  variant={isSuperAdmin ? "default" : "secondary"}
+                  className="text-[9px] px-1 py-0"
+                >
+                  {isSuperAdmin ? "SUPER" : "ORG"}
+                </Badge>
+              </div>
+              <p className="truncate text-[11px] text-ink-muted">
+                {user.email}
               </p>
-              <p className="truncate text-xs text-ink-muted">{user.email}</p>
             </div>
           </div>
           <Button

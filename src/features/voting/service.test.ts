@@ -31,7 +31,7 @@ function makeElection(overrides: Record<string, unknown> = {}) {
     start_time: new Date(NOW - 3_600_000),
     end_time: new Date(NOW + 3_600_000),
     is_active: true,
-    eligible_roles: ["SISWA", "OSIS", "MPK"],
+    eligible_roles: ["SISWA"],
     ...overrides,
   };
 }

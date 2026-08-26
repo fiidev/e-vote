@@ -19,11 +19,12 @@ import db from "@/lib/db";
 import { sendTokenEmails } from "@/lib/email/service";
 import type { ActionState } from "@/types/action-state";
 
-async function requireAdmin(): Promise<void> {
+async function requireAuth() {
   const user = await getAuthUser();
   if (!user) {
     redirect("/login");
   }
+  return user;
 }
 
 function fieldErrors(error: z.ZodError): Record<string, string[]> {
@@ -69,7 +70,7 @@ export async function createElectionAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const result = parseForm(electionCreateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
@@ -84,7 +85,19 @@ export async function createElectionAction(
     }
   }
 
-  await createElection(data);
+  const organizationId =
+    user.role === "SUPER_ADMIN"
+      ? (formData.get("organizationId") as string) || user.organizationId
+      : user.organizationId;
+
+  if (!organizationId) {
+    return {
+      ok: false,
+      errors: { _form: ["Akun Anda belum terhubung ke organisasi manapun."] },
+    };
+  }
+
+  await createElection(data, organizationId);
   revalidatePath("/admin/elections");
   return { ok: true, message: "Pemilihan berhasil dibuat." };
 }
@@ -93,7 +106,7 @@ export async function updateElectionAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const result = parseForm(electionUpdateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
@@ -108,7 +121,10 @@ export async function updateElectionAction(
     }
   }
 
-  await updateElection(data);
+  await updateElection(
+    data,
+    user.role === "SUPER_ADMIN" ? null : user.organizationId,
+  );
   revalidatePath("/admin/elections");
   return { ok: true, message: "Pemilihan berhasil diperbarui." };
 }
@@ -116,12 +132,15 @@ export async function updateElectionAction(
 export async function deleteElectionAction(
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const electionId = formData.get("election_id");
   if (typeof electionId !== "string" || !electionId)
     return { ok: false, errors: { _form: ["ID tidak valid."] } };
   try {
-    await deleteElection(electionId);
+    await deleteElection(
+      electionId,
+      user.role === "SUPER_ADMIN" ? null : user.organizationId,
+    );
     revalidatePath("/admin/elections");
     return { ok: true, message: "Pemilihan berhasil dihapus." };
   } catch (err) {
@@ -147,7 +166,7 @@ export async function deleteElectionAction(
 export async function generateTokensAction(
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  await requireAuth();
   const electionId = formData.get("election_id");
   if (typeof electionId !== "string" || !electionId) {
     return { ok: false, errors: { _form: ["ID pemilihan tidak valid."] } };
@@ -181,7 +200,7 @@ export async function generateTokensAction(
 export async function sendTokensEmailAction(
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  await requireAuth();
   const electionId = formData.get("election_id");
   if (typeof electionId !== "string" || !electionId) {
     return { ok: false, errors: { _form: ["ID pemilihan tidak valid."] } };

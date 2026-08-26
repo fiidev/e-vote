@@ -15,11 +15,12 @@ import {
 import { getAuthUser } from "@/lib/auth";
 import type { ActionState } from "@/types/action-state";
 
-async function requireAdmin(): Promise<void> {
+async function requireAuth() {
   const user = await getAuthUser();
   if (!user) {
     redirect("/login");
   }
+  return user;
 }
 
 function fieldErrors(error: z.ZodError): Record<string, string[]> {
@@ -73,12 +74,15 @@ export async function createCandidateAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const result = parseForm(candidateCreateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
   try {
-    await createCandidate(result.data);
+    await createCandidate(
+      result.data,
+      user.role === "SUPER_ADMIN" ? null : user.organizationId,
+    );
     revalidatePath("/admin/candidates");
     revalidatePath("/admin/elections");
     return { ok: true, message: "Kandidat berhasil ditambahkan." };
@@ -109,12 +113,15 @@ export async function updateCandidateAction(
   _prev: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const result = parseForm(candidateUpdateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
   try {
-    await updateCandidate(result.data);
+    await updateCandidate(
+      result.data,
+      user.role === "SUPER_ADMIN" ? null : user.organizationId,
+    );
     revalidatePath("/admin/candidates");
     revalidatePath("/admin/elections");
     return { ok: true, message: "Kandidat berhasil diperbarui." };
@@ -144,12 +151,15 @@ export async function updateCandidateAction(
 export async function deleteCandidateAction(
   formData: FormData,
 ): Promise<ActionState> {
-  await requireAdmin();
+  const user = await requireAuth();
   const candidateId = formData.get("candidate_id");
   if (typeof candidateId !== "string" || !candidateId)
     return { ok: false, errors: { _form: ["ID tidak valid."] } };
   try {
-    await deleteCandidate(candidateId);
+    await deleteCandidate(
+      candidateId,
+      user.role === "SUPER_ADMIN" ? null : user.organizationId,
+    );
     revalidatePath("/admin/candidates");
     revalidatePath("/admin/elections");
     return { ok: true, message: "Kandidat berhasil dihapus." };

@@ -11,8 +11,14 @@ export default async function VotePage() {
   if (!session) redirect("/verify");
 
   try {
-    const election = await getActiveElection();
-    return <VoteBoard candidates={election.candidates} />;
+    const election = await getActiveElection(session);
+    return (
+      <VoteBoard
+        candidates={election.candidates}
+        organizationName={election.organization?.name}
+        electionTitle={election.title}
+      />
+    );
   } catch (error) {
     if (isVoteError(error)) {
       return (

@@ -20,6 +20,7 @@ const requiredString = (field: string, min = 1) =>
   );
 
 export const voterCreateSchema = z.object({
+  election_id: requiredString("Pemilihan"),
   name: requiredString("Nama"),
   email: z.preprocess(
     (value) => (typeof value === "string" ? value.trim().toLowerCase() : ""),

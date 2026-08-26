@@ -2,20 +2,28 @@ import { randomInt } from "node:crypto";
 import type { Role } from "@/generated/prisma/enums";
 import db from "@/lib/db";
 
-/**
- * Token generation — 8 digit numerik (format display XXXX-XXXX).
- * Hanya voter dengan role yang eligible (terdaftar di Election.eligible_roles)
- * yang menerima token; voter yang sudah punya token di election tsb di-skip.
- * Anti double-vote dijamin unique([voter_id, election_id]) di schema.
- */
+// Crockford Base32 Character Set (Excludes confusing chars: 0, O, 1, I, L)
+const CROCKFORD_BASE32 = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
-export const TOKEN_LENGTH = 8;
+function generateRandomBlock(length = 4): string {
+  let str = "";
+  for (let i = 0; i < length; i++) {
+    const idx = randomInt(0, CROCKFORD_BASE32.length);
+    str += CROCKFORD_BASE32[idx];
+  }
+  return str;
+}
 
-/** Generate 8-digit numeric token sebagai string. */
-export function generateTokenCode(): string {
-  return randomInt(0, 10 ** TOKEN_LENGTH)
-    .toString()
-    .padStart(TOKEN_LENGTH, "0");
+/** Generate token dengan format: [ORG_CODE]-[BLOCK1]-[BLOCK2] (cth: MTC-K7X9-2P4W, PST-9N3K-8W2L) */
+export function generateTokenCode(orgCode = "EVT"): string {
+  const prefix =
+    orgCode
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 6) || "EVT";
+  const block1 = generateRandomBlock(4);
+  const block2 = generateRandomBlock(4);
+  return `${prefix}-${block1}-${block2}`;
 }
 
 export interface TokenGenerationResult {
@@ -33,6 +41,7 @@ export async function generateTokensForElection(
     where: { election_id: electionId },
     select: {
       eligible_roles: true,
+      organization: { select: { code: true } },
       tokens: { select: { voter_id: true } },
     },
   });
@@ -40,11 +49,15 @@ export async function generateTokensForElection(
     throw new Error("ELECTION_NOT_FOUND");
   }
 
-  const eligibleRoles = election.eligible_roles as string[];
+  const orgCode = election.organization.code || "EVT";
+  const eligibleRoles = election.eligible_roles as Role[];
   const existingVoterIds = new Set(election.tokens.map((t) => t.voter_id));
 
   const eligibleVoters = await db.voter.findMany({
-    where: { role: { in: eligibleRoles as Role[] } },
+    where: {
+      election_id: electionId,
+      role: { in: eligibleRoles },
+    },
     select: { voter_id: true },
     ...(opts.limit ? { take: opts.limit } : {}),
   });
@@ -54,14 +67,14 @@ export async function generateTokensForElection(
   );
   const skippedAlreadyHasToken = eligibleVoters.length - targets.length;
 
-  // Generate token unik (retry kalau collision)
+  // Generate token unik (retry jika tabrakan)
   const used = new Set<string>();
   const codes: string[] = [];
   for (let i = 0; i < targets.length; i++) {
-    let code = generateTokenCode();
+    let code = generateTokenCode(orgCode);
     let guard = 0;
-    while (used.has(code) && guard < 10) {
-      code = generateTokenCode();
+    while ((used.has(code) || (await isTokenTaken(code))) && guard < 10) {
+      code = generateTokenCode(orgCode);
       guard++;
     }
     used.add(code);
@@ -80,10 +93,18 @@ export async function generateTokensForElection(
 
   return {
     created: targets.length,
-    skippedNoEligible: 0, // role tidak eligible tidak pernah terpilih di atas
+    skippedNoEligible: 0,
     skippedAlreadyHasToken,
     tokenCodes: codes,
   };
+}
+
+async function isTokenTaken(tokenCode: string): Promise<boolean> {
+  const existing = await db.voteToken.findUnique({
+    where: { token_code: tokenCode },
+    select: { token_id: true },
+  });
+  return Boolean(existing);
 }
 
 export interface TokenInfo {
@@ -96,7 +117,6 @@ export interface TokenInfo {
   email_error: string | null;
 }
 
-/** Token untuk satu voter di semua election (dipakai halaman voters). */
 export async function getVoterTokens(voterId: string): Promise<TokenInfo[]> {
   const voter = await db.voter.findUnique({
     where: { voter_id: voterId },
