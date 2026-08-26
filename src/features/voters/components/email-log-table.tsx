@@ -1,8 +1,8 @@
 "use client";
 
-import { DataTable, type DataTableColumn } from "@/components/admin/data-table";
-import { EmptyState } from "@/components/admin/empty-state";
 import { Badge } from "@/components/ui/badge";
+import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
+import { EmptyState } from "@/components/ui/empty-state";
 import { formatDate, formatToken } from "@/lib/utils/format";
 
 type EmailLog = {

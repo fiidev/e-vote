@@ -10,14 +10,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import {
-  createCandidateAction,
-  deleteCandidateAction,
-  updateCandidateAction,
-} from "@/app/actions/admin";
-import { DataTable } from "@/components/admin/data-table";
-import { EmptyState } from "@/components/admin/empty-state";
-import { FormDialog } from "@/components/admin/form-dialog";
-import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogDescription,
@@ -27,6 +19,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/ui/data-table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormDialog } from "@/components/ui/form-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,7 +32,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { ActionState } from "@/types/admin";
+import {
+  createCandidateAction,
+  deleteCandidateAction,
+  updateCandidateAction,
+} from "@/features/candidates/actions";
+import type { ActionState } from "@/types/action-state";
 
 export interface CandidateRow {
   candidate_id: string;

@@ -10,16 +10,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import {
-  createElectionAction,
-  deleteElectionAction,
-  generateTokensAction,
-  sendTokensEmailAction,
-  updateElectionAction,
-} from "@/app/actions/admin";
-import { DataTable } from "@/components/admin/data-table";
-import { EmptyState } from "@/components/admin/empty-state";
-import { FormDialog } from "@/components/admin/form-dialog";
-import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogDescription,
@@ -30,12 +20,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DataTable } from "@/components/ui/data-table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormDialog } from "@/components/ui/form-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  createElectionAction,
+  deleteElectionAction,
+  generateTokensAction,
+  sendTokensEmailAction,
+  updateElectionAction,
+} from "@/features/elections/actions";
 import { formatDate } from "@/lib/utils/format";
-import type { ActionState } from "@/types/admin";
+import type { ActionState } from "@/types/action-state";
 
 export interface ElectionRow {
   election_id: string;

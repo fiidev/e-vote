@@ -23,16 +23,6 @@ import {
 } from "react";
 import { toast } from "sonner";
 import {
-  createVoterAction,
-  deleteVoterAction,
-  importVotersAction,
-  resendTokenEmailAction,
-  updateVoterAction,
-} from "@/app/actions/admin";
-import { DataTable } from "@/components/admin/data-table";
-import { EmptyState } from "@/components/admin/empty-state";
-import { FormDialog } from "@/components/admin/form-dialog";
-import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogDescription,
@@ -42,6 +32,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { DataTable } from "@/components/ui/data-table";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FormDialog } from "@/components/ui/form-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -51,6 +44,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  createVoterAction,
+  deleteVoterAction,
+  importVotersAction,
+  resendTokenEmailAction,
+  updateVoterAction,
+} from "@/features/voters/actions";
 import { useDebounce } from "@/hooks/use-debounce";
 import { formatDate, formatToken } from "@/lib/utils/format";
 import type { ActionState } from "@/types/admin";

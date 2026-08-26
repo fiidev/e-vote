@@ -3,13 +3,13 @@
 import Image from "next/image";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { verifyTokenAction } from "@/app/actions/voting";
-import { voteErrorMessage } from "@/components/public/error-messages";
 import { Button } from "@/components/ui/button";
+import { verifyTokenAction } from "@/features/voting/actions";
+import { voteErrorMessage } from "@/features/voting/error-messages";
 
 const TOKEN_LENGTH = 8;
 
-export function VerifyClient() {
+export function VerifyForm() {
   const [state, formAction, isPending] = useActionState(
     verifyTokenAction,
     undefined,

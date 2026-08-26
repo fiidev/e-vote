@@ -1,4 +1,4 @@
-import { CandidatesClient } from "@/components/admin/candidates-client";
+import { CandidatesClient } from "@/features/candidates/components/candidates-client";
 import db from "@/lib/db";
 
 /** Halaman daftar kandidat — server component tipis, UI di CandidatesClient. */

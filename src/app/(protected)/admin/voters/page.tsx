@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { VotersClient } from "@/components/admin/voters-client";
-import { listVoters } from "@/lib/admin/service";
+import { VotersClient } from "@/features/voters/components/voters-client";
+import { listVoters } from "@/features/voters/service";
 import db from "@/lib/db";
 
 interface PageProps {

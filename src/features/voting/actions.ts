@@ -2,20 +2,19 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { isVoteError } from "@/lib/vote/errors";
-import { castVoteSchema, verifyTokenSchema } from "@/lib/vote/schemas";
-import { castVote, verifyToken } from "@/lib/vote/service";
+import { isVoteError } from "@/features/voting/errors";
+import { castVoteSchema, verifyTokenSchema } from "@/features/voting/schemas";
+import { castVote, verifyToken } from "@/features/voting/service";
 import {
   clearVoteSession,
   getVoteSession,
   setVoteSession,
-} from "@/lib/vote/session";
+} from "@/features/voting/session";
 import type { VoteErrorCode } from "@/types/error";
 
 /**
  * Server actions voting (dipakai form di /verify, /vote).
  * Pattern: zod parse → service → error contract ({ error: code }) → redirect.
- * UI cukup memetakan VoteErrorCode ke pesan (lihat lib/vote/errors.ts).
  */
 
 export type VoteActionState = { error?: VoteErrorCode } | undefined;
@@ -44,8 +43,6 @@ export async function castVoteAction(
   _prev: VoteActionState,
   formData: FormData,
 ): Promise<VoteActionState> {
-  // Token harus ada di session — tanpa session, tolak (jangan pernah
-  // menerima token dari form di langkah ini; itu celah double-vote).
   const token = await getVoteSession();
   if (!token) return { error: "NO_VOTE_SESSION" };
 

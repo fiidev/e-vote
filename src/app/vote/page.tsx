@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { ErrorAlert } from "@/components/public/error-alert";
-import { VoteClient } from "@/components/public/vote-client";
 import { LinkButton } from "@/components/ui/button";
-import { isVoteError } from "@/lib/vote/errors";
-import { getActiveElection } from "@/lib/vote/service";
-import { getVoteSession } from "@/lib/vote/session";
+import { VoteBoard } from "@/features/voting/components/vote-board";
+import { ErrorAlert } from "@/features/voting/error-alert";
+import { isVoteError } from "@/features/voting/errors";
+import { getActiveElection } from "@/features/voting/service";
+import { getVoteSession } from "@/features/voting/session";
 
 export default async function VotePage() {
   const session = await getVoteSession();
@@ -12,7 +12,7 @@ export default async function VotePage() {
 
   try {
     const election = await getActiveElection();
-    return <VoteClient candidates={election.candidates} />;
+    return <VoteBoard candidates={election.candidates} />;
   } catch (error) {
     if (isVoteError(error)) {
       return (

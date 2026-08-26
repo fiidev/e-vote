@@ -4,12 +4,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { castVoteAction } from "@/app/actions/voting";
-import {
-  CandidateCard,
-  type CandidateCardData,
-} from "@/components/public/candidate-card";
-import { voteErrorMessage } from "@/components/public/error-messages";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,12 +12,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { castVoteAction } from "@/features/voting/actions";
+import {
+  CandidateCard,
+  type CandidateCardData,
+} from "@/features/voting/components/candidate-card";
+import { voteErrorMessage } from "@/features/voting/error-messages";
 
-export function VoteClient({
-  candidates,
-}: {
-  candidates: CandidateCardData[];
-}) {
+export function VoteBoard({ candidates }: { candidates: CandidateCardData[] }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     castVoteAction,

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { LinkButton } from "@/components/ui/button";
 
-export function LandingClient() {
+export function LandingHero() {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-stone-100 overflow-hidden">
       <div className="relative w-full max-w-[1400px] h-[800px] rounded-[70px] overflow-hidden mx-6">

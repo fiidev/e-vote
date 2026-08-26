@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LinkButton } from "@/components/ui/button";
 
-export function SuccessClient() {
+export function VoteSuccess() {
   const router = useRouter();
   const [seconds, setSeconds] = useState(8);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);

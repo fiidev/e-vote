@@ -1,8 +1,11 @@
+import { VoteError } from "@/features/voting/errors";
+import type {
+  CastVoteOutput,
+  VerifyTokenOutput,
+} from "@/features/voting/schemas";
 import { Prisma } from "@/generated/prisma/client";
 import db from "@/lib/db";
 import { rateLimiter } from "@/lib/utils/rate-limit";
-import { VoteError } from "@/lib/vote/errors";
-import type { CastVoteOutput, VerifyTokenOutput } from "@/lib/vote/schemas";
 
 /**
  * Core business logic voting.

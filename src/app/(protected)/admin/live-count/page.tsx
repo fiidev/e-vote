@@ -1,4 +1,4 @@
-import { LiveCountClient } from "@/components/admin/live-count-client";
+import { LiveCountClient } from "@/features/live-count/components/live-count-client";
 import db from "@/lib/db";
 
 export default async function LiveCountPage() {

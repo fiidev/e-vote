@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { VerifyClient } from "@/components/public/verify-client";
-import { getVoteSession } from "@/lib/vote/session";
+import { VerifyForm } from "@/features/voting/components/verify-form";
+import { getVoteSession } from "@/features/voting/session";
 
 export default async function VerifyPage() {
   const session = await getVoteSession();
   if (session) redirect("/vote");
 
-  return <VerifyClient />;
+  return <VerifyForm />;
 }

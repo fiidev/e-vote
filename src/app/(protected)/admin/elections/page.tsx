@@ -1,4 +1,4 @@
-import { ElectionsClient } from "@/components/admin/elections-client";
+import { ElectionsClient } from "@/features/elections/components/elections-client";
 import db from "@/lib/db";
 
 /** Halaman daftar pemilihan — server component tipis. */

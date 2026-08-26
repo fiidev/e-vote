@@ -1,7 +1,4 @@
 import { ListChecks, MailWarning, Users, Vote } from "lucide-react";
-import { ElectionTable } from "@/components/admin/election-table";
-import { EmailLogTable } from "@/components/admin/email-log-table";
-import { StatCard } from "@/components/admin/stat-card";
 import {
   Card,
   CardContent,
@@ -9,6 +6,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/stat-card";
+import { ElectionTable } from "@/features/elections/components/election-table";
+import { EmailLogTable } from "@/features/voters/components/email-log-table";
 import db from "@/lib/db";
 
 /**
