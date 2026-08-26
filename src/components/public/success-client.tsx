@@ -42,6 +42,7 @@ export function SuccessClient() {
           alt=""
           width={384}
           height={618}
+          priority
           className="absolute left-0 top-[186px] w-96 h-[618px] object-cover"
         />
 
@@ -50,6 +51,7 @@ export function SuccessClient() {
           alt=""
           width={384}
           height={668}
+          priority
           className="absolute right-[26px] top-[132px] w-96 h-[668px] object-cover"
         />
 

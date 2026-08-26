@@ -135,11 +135,30 @@ export async function deleteElectionAction(
 ): Promise<ActionState> {
   await requireAdmin();
   const electionId = formData.get("election_id");
-  if (typeof electionId !== "string")
+  if (typeof electionId !== "string" || !electionId)
     return { ok: false, errors: { _form: ["ID tidak valid."] } };
-  await deleteElection(electionId);
-  revalidatePath("/admin/elections");
-  return { ok: true, message: "Pemilihan berhasil dihapus." };
+  try {
+    await deleteElection(electionId);
+    revalidatePath("/admin/elections");
+    return { ok: true, message: "Pemilihan berhasil dihapus." };
+  } catch (err) {
+    if (err instanceof Error && err.message === "ELECTION_HAS_VOTES") {
+      return {
+        ok: false,
+        errors: {
+          _form: [
+            "Pemilihan tidak dapat dihapus karena sudah memiliki suara masuk atau token yang terpakai.",
+          ],
+        },
+      };
+    }
+    return {
+      ok: false,
+      errors: {
+        _form: ["Gagal menghapus pemilihan. Terjadi kesalahan server."],
+      },
+    };
+  }
 }
 
 // ─── Candidates ───────────────────────────────────────────────────────────
@@ -152,10 +171,32 @@ export async function createCandidateAction(
   const result = parseForm(candidateCreateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
-  await createCandidate(result.data);
-  revalidatePath("/admin/candidates");
-  revalidatePath("/admin/elections");
-  return { ok: true, message: "Kandidat berhasil ditambahkan." };
+  try {
+    await createCandidate(result.data);
+    revalidatePath("/admin/candidates");
+    revalidatePath("/admin/elections");
+    return { ok: true, message: "Kandidat berhasil ditambahkan." };
+  } catch (err) {
+    if (
+      (err instanceof Error && err.message === "CANDIDATE_NUMBER_EXISTS") ||
+      isUniqueViolation(err)
+    ) {
+      return {
+        ok: false,
+        errors: {
+          candidate_number: [
+            "Nomor urut ini sudah digunakan oleh kandidat lain dalam pemilihan yang sama.",
+          ],
+        },
+      };
+    }
+    return {
+      ok: false,
+      errors: {
+        _form: ["Gagal menambahkan kandidat. Terjadi kesalahan server."],
+      },
+    };
+  }
 }
 
 export async function updateCandidateAction(
@@ -166,10 +207,32 @@ export async function updateCandidateAction(
   const result = parseForm(candidateUpdateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
-  await updateCandidate(result.data);
-  revalidatePath("/admin/candidates");
-  revalidatePath("/admin/elections");
-  return { ok: true, message: "Kandidat berhasil diperbarui." };
+  try {
+    await updateCandidate(result.data);
+    revalidatePath("/admin/candidates");
+    revalidatePath("/admin/elections");
+    return { ok: true, message: "Kandidat berhasil diperbarui." };
+  } catch (err) {
+    if (
+      (err instanceof Error && err.message === "CANDIDATE_NUMBER_EXISTS") ||
+      isUniqueViolation(err)
+    ) {
+      return {
+        ok: false,
+        errors: {
+          candidate_number: [
+            "Nomor urut ini sudah digunakan oleh kandidat lain dalam pemilihan yang sama.",
+          ],
+        },
+      };
+    }
+    return {
+      ok: false,
+      errors: {
+        _form: ["Gagal memperbarui kandidat. Terjadi kesalahan server."],
+      },
+    };
+  }
 }
 
 export async function deleteCandidateAction(
@@ -177,12 +240,31 @@ export async function deleteCandidateAction(
 ): Promise<ActionState> {
   await requireAdmin();
   const candidateId = formData.get("candidate_id");
-  if (typeof candidateId !== "string")
+  if (typeof candidateId !== "string" || !candidateId)
     return { ok: false, errors: { _form: ["ID tidak valid."] } };
-  await deleteCandidate(candidateId);
-  revalidatePath("/admin/candidates");
-  revalidatePath("/admin/elections");
-  return { ok: true, message: "Kandidat berhasil dihapus." };
+  try {
+    await deleteCandidate(candidateId);
+    revalidatePath("/admin/candidates");
+    revalidatePath("/admin/elections");
+    return { ok: true, message: "Kandidat berhasil dihapus." };
+  } catch (err) {
+    if (err instanceof Error && err.message === "CANDIDATE_HAS_VOTES") {
+      return {
+        ok: false,
+        errors: {
+          _form: [
+            "Kandidat tidak dapat dihapus karena sudah memiliki suara yang masuk.",
+          ],
+        },
+      };
+    }
+    return {
+      ok: false,
+      errors: {
+        _form: ["Gagal menghapus kandidat. Terjadi kesalahan server."],
+      },
+    };
+  }
 }
 
 // ─── Voters ───────────────────────────────────────────────────────────────
@@ -201,7 +283,12 @@ export async function createVoterAction(
     if (isUniqueViolation(err)) {
       return { ok: false, errors: { email: ["Email sudah terdaftar."] } };
     }
-    throw err;
+    return {
+      ok: false,
+      errors: {
+        _form: ["Gagal menambahkan pemilih. Terjadi kesalahan server."],
+      },
+    };
   }
   revalidatePath("/admin/voters");
   return { ok: true, message: "Pemilih berhasil ditambahkan." };
@@ -215,7 +302,22 @@ export async function updateVoterAction(
   const result = parseForm(voterUpdateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
-  await updateVoter(result.data);
+  try {
+    await updateVoter(result.data);
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return {
+        ok: false,
+        errors: { email: ["Email sudah digunakan oleh pemilih lain."] },
+      };
+    }
+    return {
+      ok: false,
+      errors: {
+        _form: ["Gagal memperbarui pemilih. Terjadi kesalahan server."],
+      },
+    };
+  }
   revalidatePath("/admin/voters");
   return { ok: true, message: "Data pemilih berhasil diperbarui." };
 }
@@ -225,11 +327,28 @@ export async function deleteVoterAction(
 ): Promise<ActionState> {
   await requireAdmin();
   const voterId = formData.get("voter_id");
-  if (typeof voterId !== "string")
+  if (typeof voterId !== "string" || !voterId)
     return { ok: false, errors: { _form: ["ID tidak valid."] } };
-  await deleteVoter(voterId);
-  revalidatePath("/admin/voters");
-  return { ok: true, message: "Pemilih berhasil dihapus." };
+  try {
+    await deleteVoter(voterId);
+    revalidatePath("/admin/voters");
+    return { ok: true, message: "Pemilih berhasil dihapus." };
+  } catch (err) {
+    if (err instanceof Error && err.message === "VOTER_HAS_VOTED") {
+      return {
+        ok: false,
+        errors: {
+          _form: [
+            "Pemilih tidak dapat dihapus karena sudah menggunakan hak suaranya dalam pemilihan.",
+          ],
+        },
+      };
+    }
+    return {
+      ok: false,
+      errors: { _form: ["Gagal menghapus pemilih. Terjadi kesalahan server."] },
+    };
+  }
 }
 
 export async function updateVoterEmailAction(
@@ -240,7 +359,17 @@ export async function updateVoterEmailAction(
   const result = parseForm(voterEmailUpdateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
-  await updateVoterEmail(result.data.voter_id, result.data.email);
+  try {
+    await updateVoterEmail(result.data.voter_id, result.data.email);
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return { ok: false, errors: { email: ["Email sudah terdaftar."] } };
+    }
+    return {
+      ok: false,
+      errors: { _form: ["Gagal memperbarui email. Terjadi kesalahan server."] },
+    };
+  }
   revalidatePath("/admin/voters");
   return {
     ok: true,
@@ -277,7 +406,10 @@ export async function generateTokensAction(
     if (err instanceof Error && err.message === "ELECTION_NOT_FOUND") {
       return { ok: false, errors: { _form: ["Pemilihan tidak ditemukan."] } };
     }
-    throw err;
+    return {
+      ok: false,
+      errors: { _form: ["Gagal membuat token. Terjadi kesalahan server."] },
+    };
   }
 }
 
@@ -290,80 +422,118 @@ export async function sendTokensEmailAction(
     return { ok: false, errors: { _form: ["ID pemilihan tidak valid."] } };
   }
 
-  // Ambil token yang belum terkirim (email_sent_at null) untuk election tsb
-  const pending = await db.voteToken.findMany({
-    where: { election_id: electionId, email_sent_at: null },
-    include: {
-      voter: { select: { voter_id: true, name: true, email: true } },
-      election: { select: { title: true } },
-    },
-  });
+  try {
+    // Ambil token yang belum terkirim (email_sent_at null) untuk election tsb
+    const pending = await db.voteToken.findMany({
+      where: { election_id: electionId, email_sent_at: null },
+      include: {
+        voter: { select: { voter_id: true, name: true, email: true } },
+        election: { select: { title: true } },
+      },
+    });
 
-  if (pending.length === 0) {
+    if (pending.length === 0) {
+      return {
+        ok: true,
+        message:
+          "Tidak ada token yang perlu dikirim. Semua token sudah terkirim atau belum dibuat.",
+      };
+    }
+
+    const items = pending.map((t) => ({
+      voter_id: t.voter.voter_id,
+      voter_name: t.voter.name,
+      voter_email: t.voter.email,
+      token_id: t.token_id,
+      token_code: t.token_code,
+      election_title: t.election.title,
+    }));
+
+    const result = await sendTokenEmails(items);
+    revalidatePath("/admin/elections");
+    revalidatePath("/admin/voters");
+
+    const parts: string[] = [];
+    if (result.sent > 0) parts.push(`${result.sent} terkirim`);
+    if (result.failed > 0) parts.push(`${result.failed} gagal`);
+    if (result.noEmail > 0) parts.push(`${result.noEmail} tanpa email`);
+    if (result.skippedDueToCap > 0)
+      parts.push(`${result.skippedDueToCap} ditunda (kuota)`);
+
     return {
-      ok: true,
+      ok: result.failed === 0,
       message:
-        "Tidak ada token yang perlu dikirim. Semua token sudah terkirim atau belum dibuat.",
+        parts.length > 0
+          ? `Email: ${parts.join(", ")}.`
+          : "Email selesai diproses.",
+    };
+  } catch (_err) {
+    return {
+      ok: false,
+      errors: {
+        _form: ["Gagal mengirim email token. Terjadi kesalahan server."],
+      },
     };
   }
-
-  const items = pending.map((t) => ({
-    voter_id: t.voter.voter_id,
-    voter_name: t.voter.name,
-    voter_email: t.voter.email,
-    token_id: t.token_id,
-    token_code: t.token_code,
-    election_title: t.election.title,
-  }));
-
-  const result = await sendTokenEmails(items);
-  revalidatePath("/admin/elections");
-  revalidatePath("/admin/voters");
-
-  const parts: string[] = [];
-  if (result.sent > 0) parts.push(`${result.sent} terkirim`);
-  if (result.failed > 0) parts.push(`${result.failed} gagal`);
-  if (result.noEmail > 0) parts.push(`${result.noEmail} tanpa email`);
-  if (result.skippedDueToCap > 0)
-    parts.push(`${result.skippedDueToCap} ditunda (kuota)`);
-
-  return {
-    ok: result.failed === 0,
-    message:
-      parts.length > 0
-        ? `Email: ${parts.join(", ")}.`
-        : "Email selesai diproses.",
-  };
 }
 
 export async function resendTokenEmailAction(
   formData: FormData,
-): Promise<void> {
+): Promise<ActionState> {
   await requireAdmin();
   const tokenId = formData.get("token_id");
-  if (typeof tokenId !== "string" || !tokenId) return;
+  if (typeof tokenId !== "string" || !tokenId) {
+    return { ok: false, errors: { _form: ["ID token tidak valid."] } };
+  }
 
-  const token = await db.voteToken.findUnique({
-    where: { token_id: tokenId },
-    include: {
-      voter: { select: { voter_id: true, name: true, email: true } },
-      election: { select: { title: true } },
-    },
-  });
-  if (!token) return;
+  try {
+    const token = await db.voteToken.findUnique({
+      where: { token_id: tokenId },
+      include: {
+        voter: { select: { voter_id: true, name: true, email: true } },
+        election: { select: { title: true } },
+      },
+    });
+    if (!token) {
+      return { ok: false, errors: { _form: ["Token tidak ditemukan."] } };
+    }
 
-  await sendTokenEmails([
-    {
-      voter_id: token.voter.voter_id,
-      voter_name: token.voter.name,
-      voter_email: token.voter.email,
-      token_id: token.token_id,
-      token_code: token.token_code,
-      election_title: token.election.title,
-      resend: true,
-    },
-  ]);
-  revalidatePath("/admin/voters");
+    const result = await sendTokenEmails([
+      {
+        voter_id: token.voter.voter_id,
+        voter_name: token.voter.name,
+        voter_email: token.voter.email,
+        token_id: token.token_id,
+        token_code: token.token_code,
+        election_title: token.election.title,
+        resend: true,
+      },
+    ]);
+    revalidatePath("/admin/voters");
+    if (result.sent > 0) {
+      return {
+        ok: true,
+        message: `Email token berhasil dikirim ulang ke ${token.voter.email}.`,
+      };
+    }
+    return {
+      ok: false,
+      errors: {
+        _form: [
+          result.failed > 0
+            ? "Gagal mengirim email token. Periksa konfigurasi email."
+            : "Email token ditunda karena batas kuota.",
+        ],
+      },
+    };
+  } catch (_err) {
+    return {
+      ok: false,
+      errors: {
+        _form: ["Gagal mengirim ulang email. Terjadi kesalahan server."],
+      },
+    };
+  }
 }
 
 // ─── Excel import (SATU transaksi + rollback) ─────────────────────────────
@@ -404,7 +574,6 @@ export async function importVotersAction(
             role: row.role,
             generation: row.generation ?? null,
           })),
-          skipDuplicates: true,
         });
       },
       { timeout: 60000 },

@@ -23,13 +23,28 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const electionId = url.searchParams.get("election_id") || undefined;
 
+  let interval: ReturnType<typeof setInterval> | null = null;
+
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
-      const closed = false;
+      let closed = false;
+
+      const cleanup = () => {
+        closed = true;
+        if (interval) {
+          clearInterval(interval);
+          interval = null;
+        }
+      };
+
+      request.signal.addEventListener("abort", cleanup);
 
       const push = async () => {
-        if (closed) return;
+        if (closed || request.signal.aborted) {
+          cleanup();
+          return;
+        }
         try {
           const election = await db.election.findFirst({
             where: {
@@ -73,16 +88,27 @@ export async function GET(request: Request) {
 
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ electionId: election.election_id, electionTitle: election.title, candidates, totalVotes })}\n\n`,
+              `data: ${JSON.stringify({
+                electionId: election.election_id,
+                electionTitle: election.title,
+                candidates,
+                totalVotes,
+              })}\n\n`,
             ),
           );
         } catch {
-          // Silent fail
+          cleanup();
         }
       };
 
       await push();
-      const _interval = setInterval(push, 2000);
+      interval = setInterval(push, 2000);
+    },
+    cancel() {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
     },
   });
 

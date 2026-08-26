@@ -1,8 +1,26 @@
 "use client";
 
-import { FileDown, Pencil, RefreshCw, Trash2, Upload } from "lucide-react";
+import {
+  FileDown,
+  Loader2,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  Upload,
+  Users,
+  X,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useActionState, useEffect, useRef, useState } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import {
   createVoterAction,
@@ -14,6 +32,14 @@ import {
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +49,9 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
+import { useDebounce } from "@/hooks/use-debounce";
 import { formatDate, formatToken } from "@/lib/utils/format";
 import type { ActionState } from "@/types/admin";
 
@@ -67,18 +95,35 @@ export function VotersClient({
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [editing, setEditing] = useState<VoterRow | null>(null);
-  // Reset dialog form key setiap kali dialog open/close atau editing berubah,
-  // agar useActionState tidak leak error dari form sebelumnya.
+  const [deletingVoter, setDeletingVoter] = useState<VoterRow | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
   const [dialogKey, setDialogKey] = useState(0);
+
+  async function voterFormAction(
+    prevState: ActionState,
+    formData: FormData,
+  ): Promise<ActionState> {
+    const voterId = formData.get("voter_id");
+    if (voterId && typeof voterId === "string" && voterId.trim() !== "") {
+      return updateVoterAction(prevState, formData);
+    }
+    return createVoterAction(prevState, formData);
+  }
+
   const [actionState, formAction, isPending] = useActionState(
-    editing ? updateVoterAction : createVoterAction,
+    voterFormAction,
     initialActionState,
   );
   const [importState, importAction, importPending] = useActionState(
     importVotersAction,
     initialActionState,
   );
+
+  const [isDeleting, startDeleteTransition] = useTransition();
+  const [isResending, startResendTransition] = useTransition();
 
   // Toast feedback setelah form voter submit selesai
   const prevPending = useRef(isPending);
@@ -124,104 +169,93 @@ export function VotersClient({
     setDialogOpen(true);
   }
 
-  async function handleDelete(voterId: string, name: string) {
-    const formData = new FormData();
-    formData.set("voter_id", voterId);
-    const result = await deleteVoterAction(formData);
-    if (result.ok) {
-      toast.success(result.message ?? `${name} berhasil dihapus.`);
-    } else {
-      toast.error(result.errors?._form?.[0] ?? "Gagal menghapus.");
-    }
+  function confirmDelete() {
+    if (!deletingVoter) return;
+    startDeleteTransition(async () => {
+      const formData = new FormData();
+      formData.set("voter_id", deletingVoter.voter_id);
+      const result = await deleteVoterAction(formData);
+      if (result.ok) {
+        toast.success(
+          result.message ?? `${deletingVoter.name} berhasil dihapus.`,
+        );
+        setDeletingVoter(null);
+      } else {
+        toast.error(result.errors?._form?.[0] ?? "Gagal menghapus pemilih.");
+      }
+    });
   }
 
-  function updateParam(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set(key, value);
-    } else {
-      params.delete(key);
-    }
-    if (key === "q" || key === "status") params.delete("page");
-    router.push(`/admin/voters?${params.toString()}`);
+  function handleResendToken(tokenId: string) {
+    setResendingId(tokenId);
+    startResendTransition(async () => {
+      const formData = new FormData();
+      formData.set("token_id", tokenId);
+      const result = await resendTokenEmailAction(formData);
+      setResendingId(null);
+      if (result.ok) {
+        toast.success(result.message ?? "Email token berhasil dikirim ulang.");
+      } else {
+        toast.error(
+          result.errors?._form?.[0] ?? "Gagal mengirim ulang email token.",
+        );
+      }
+    });
   }
+
+  const updateParam = useCallback(
+    (key: string, value: string) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+      if (key === "q" || key === "status") params.delete("page");
+      router.push(`/admin/voters?${params.toString()}`);
+    },
+    [router, searchParams],
+  );
 
   const status = searchParams.get("status") ?? "ALL";
-  const search = searchParams.get("q") ?? "";
+  const urlSearch = searchParams.get("q") ?? "";
+  const [searchTerm, setSearchTerm] = useState(urlSearch);
+  const debouncedSearch = useDebounce(searchTerm, 350);
+
+  // Sync searchTerm jika URL berubah (misal dari reset filter atau navigasi)
+  useEffect(() => {
+    setSearchTerm(urlSearch);
+  }, [urlSearch]);
+
+  // Update query parameter URL saat debounced search berubah
+  useEffect(() => {
+    if (debouncedSearch !== urlSearch) {
+      updateParam("q", debouncedSearch);
+    }
+  }, [debouncedSearch, urlSearch, updateParam]);
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <form
-          className="flex items-center gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const data = new FormData(e.currentTarget);
-            updateParam("q", String(data.get("q") ?? ""));
-          }}
-        >
-          <Input
-            name="q"
-            defaultValue={search}
-            placeholder="Cari nama / email…"
-            className="w-64"
-            aria-label="Cari pemilih berdasarkan nama atau email"
-          />
-          <Button type="submit" variant="outline">
-            Cari
-          </Button>
-        </form>
+      {/* Top Header & Primary Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2.5">
+          <Badge variant="secondary" className="px-3 py-1 text-sm font-medium">
+            <Users className="mr-1.5 size-4 text-ink-muted" />
+            {total} Pemilih Terdaftar
+          </Badge>
+          {(urlSearch || status !== "ALL") && (
+            <Badge variant="outline" className="text-xs text-ink-muted">
+              Filter aktif
+            </Badge>
+          )}
+        </div>
 
-        <Select
-          selectedKey={status}
-          onSelectionChange={(key) =>
-            updateParam("status", String(key ?? "ALL"))
-          }
-          placeholder="Semua status"
-          aria-label="Filter status email"
-        >
-          <SelectTrigger
-            className="w-44"
-            aria-label="Filter berdasarkan status email"
-          />
-          <SelectContent>
-            <SelectItem id="ALL">Semua status</SelectItem>
-            <SelectItem id="SENT">Terkirim</SelectItem>
-            <SelectItem id="FAILED">Gagal</SelectItem>
-            <SelectItem id="NO_EMAIL">Belum kirim</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <Select
-            selectedKey={selectedElection}
-            onSelectionChange={(key) => setSelectedElection(String(key ?? ""))}
-            placeholder="Pilih pemilihan"
-            aria-label="Pilih pemilihan untuk export token"
-          >
-            <SelectTrigger
-              className="w-52"
-              aria-label="Pilih pemilihan untuk export"
-            />
-            <SelectContent>
-              {electionOptions.map((e) => (
-                <SelectItem key={e.election_id} id={e.election_id}>
-                  {e.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <a
-            href={`/api/admin/voters/export?election_id=${selectedElection}`}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <FileDown className="size-4" aria-hidden />
-            Export Token
-          </a>
+        {/* Action Buttons Group */}
+        <div className="flex flex-wrap items-center gap-2">
           <a
             href="/api/admin/voters/template"
             className={buttonVariants({ variant: "outline" })}
+            title="Download Template Excel Pemilih"
           >
             <FileDown className="size-4" aria-hidden />
             Template
@@ -230,15 +264,93 @@ export function VotersClient({
             <Upload className="size-4" aria-hidden />
             Import Excel
           </Button>
-          <Button onPress={openCreate}>Tambah Pemilih</Button>
+          <Button
+            variant="outline"
+            onPress={() => {
+              if (electionOptions.length === 0) {
+                toast.error(
+                  "Belum ada pemilihan yang tersedia untuk ekspor token.",
+                );
+                return;
+              }
+              setExportOpen(true);
+            }}
+          >
+            <FileDown className="size-4" aria-hidden />
+            Export Token
+          </Button>
+          <Button onPress={openCreate}>
+            <Plus className="size-4" aria-hidden />
+            Tambah Pemilih
+          </Button>
         </div>
       </div>
 
-      <p className="text-sm text-ink-muted">
-        {total} pemilih · halaman {page}/{totalPages}
-      </p>
+      <div className="rounded-2xl border border-line bg-surface p-3 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari nama atau email…"
+              className="pl-9 pr-8 w-full"
+              aria-label="Cari pemilih berdasarkan nama atau email"
+            />
+            {searchTerm ? (
+              <button
+                type="button"
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-ink transition-colors cursor-pointer"
+                aria-label="Hapus teks pencarian"
+              >
+                <X className="size-4" />
+              </button>
+            ) : null}
+          </div>
 
-      {/* Tabel */}
+          <div className="flex items-center gap-2">
+            <div className="w-48 sm:w-52">
+              <Select
+                selectedKey={status}
+                onSelectionChange={(key) =>
+                  updateParam("status", String(key ?? "ALL"))
+                }
+                placeholder="Status email"
+                aria-label="Filter status email"
+                className="w-full"
+              >
+                <SelectTrigger aria-label="Filter status email">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem id="ALL">Semua status email</SelectItem>
+                  <SelectItem id="SENT">Terkirim</SelectItem>
+                  <SelectItem id="FAILED">Gagal kirim</SelectItem>
+                  <SelectItem id="NO_EMAIL">Belum kirim</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {urlSearch || status !== "ALL" ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onPress={() => {
+                  setSearchTerm("");
+                  router.push("/admin/voters");
+                }}
+                className="text-xs text-ink-muted hover:text-destructive hover:bg-destructive/10 shrink-0"
+                aria-label="Reset filter"
+              >
+                <X className="size-3.5 mr-1" />
+                Reset Filter
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
       <DataTable
         columns={[
           {
@@ -246,8 +358,8 @@ export function VotersClient({
             header: "Nama",
             cell: (v) => (
               <div className="min-w-0">
-                <p className="font-medium">{v.name}</p>
-                <p className="text-xs text-ink-muted">{v.email}</p>
+                <p className="font-medium truncate">{v.name}</p>
+                <p className="text-xs text-ink-muted truncate">{v.email}</p>
               </div>
             ),
           },
@@ -275,7 +387,7 @@ export function VotersClient({
                   <p className="font-mono text-sm">
                     {formatToken(token.token_code)}
                   </p>
-                  <p className="text-xs text-ink-muted">
+                  <p className="text-xs text-ink-muted truncate">
                     {token.election.title}
                   </p>
                 </div>
@@ -300,10 +412,10 @@ export function VotersClient({
               }
               if (token.email_error) {
                 return (
-                  <div className="space-y-0.5">
+                  <div className="space-y-0.5 max-w-40">
                     <Badge variant="destructive">Gagal</Badge>
                     <p
-                      className="max-w-40 truncate text-xs text-ink-muted"
+                      className="truncate text-xs text-ink-muted"
                       title={token.email_error}
                     >
                       {token.email_error}
@@ -330,21 +442,21 @@ export function VotersClient({
             cell: (v) => (
               <div className="flex gap-1">
                 {v.tokens[0]?.token_id ? (
-                  <form action={resendTokenEmailAction}>
-                    <input
-                      type="hidden"
-                      name="token_id"
-                      value={v.tokens[0].token_id}
-                    />
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Kirim ulang email ${v.name}`}
-                    >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Kirim ulang email ${v.name}`}
+                    isDisabled={
+                      isResending && resendingId === v.tokens[0].token_id
+                    }
+                    onPress={() => handleResendToken(v.tokens[0].token_id)}
+                  >
+                    {isResending && resendingId === v.tokens[0].token_id ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                    ) : (
                       <RefreshCw className="size-4" aria-hidden />
-                    </Button>
-                  </form>
+                    )}
+                  </Button>
                 ) : null}
                 <Button
                   variant="ghost"
@@ -359,7 +471,7 @@ export function VotersClient({
                   size="icon"
                   aria-label={`Hapus ${v.name}`}
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onPress={() => handleDelete(v.voter_id, v.name)}
+                  onPress={() => setDeletingVoter(v)}
                 >
                   <Trash2 className="size-4" aria-hidden />
                 </Button>
@@ -378,30 +490,79 @@ export function VotersClient({
         }
       />
 
-      {/* Pagination */}
-      {totalPages > 1 ? (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="outline"
-            isDisabled={page <= 1}
-            onPress={() => updateParam("page", String(page - 1))}
-          >
-            Sebelumnya
-          </Button>
-          <span className="text-sm text-ink-muted">
-            {page} / {totalPages}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+        <p className="text-sm text-ink-muted">
+          Menampilkan{" "}
+          <span className="font-medium text-ink">
+            {total === 0 ? 0 : (page - 1) * 50 + 1}
           </span>
-          <Button
-            variant="outline"
-            isDisabled={page >= totalPages}
-            onPress={() => updateParam("page", String(page + 1))}
-          >
-            Berikutnya
-          </Button>
-        </div>
-      ) : null}
+          {" - "}
+          <span className="font-medium text-ink">
+            {Math.min(page * 50, total)}
+          </span>{" "}
+          dari <span className="font-medium text-ink">{total}</span> pemilih
+        </p>
 
-      {/* Form tambah/edit voter */}
+        {totalPages > 1 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              isDisabled={page <= 1}
+              onPress={() => updateParam("page", String(page - 1))}
+            >
+              Sebelumnya
+            </Button>
+            <span className="text-xs px-2 font-medium text-ink">
+              {page} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              isDisabled={page >= totalPages}
+              onPress={() => updateParam("page", String(page + 1))}
+            >
+              Berikutnya
+            </Button>
+          </div>
+        )}
+      </div>
+      <AlertDialog
+        isOpen={deletingVoter !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeletingVoter(null);
+        }}
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>Hapus Pemilih</AlertDialogTitle>
+          <AlertDialogDescription>
+            Apakah kamu yakin ingin menghapus pemilih{" "}
+            <span className="font-semibold text-ink">
+              {deletingVoter?.name} ({deletingVoter?.email})
+            </span>
+            ? Pemilih yang sudah memberikan suara tidak dapat dihapus demi
+            integritas data.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel isDisabled={isDeleting}>Batal</AlertDialogCancel>
+          <Button
+            variant="destructive"
+            isDisabled={isDeleting}
+            onPress={confirmDelete}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Menghapus…
+              </>
+            ) : (
+              "Hapus"
+            )}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialog>
+
       <FormDialog
         key={dialogKey}
         open={dialogOpen}
@@ -410,7 +571,7 @@ export function VotersClient({
         description="Data pemilih untuk distribusi token."
         isSubmitting={isPending}
       >
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="space-y-4 w-full min-w-0">
           <input
             type="hidden"
             name="voter_id"
@@ -421,16 +582,22 @@ export function VotersClient({
               {actionState.errors._form[0]}
             </p>
           ) : null}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="name">Nama</Label>
             <Input
               id="name"
               name="name"
               defaultValue={editing?.name ?? undefined}
               placeholder="Nama lengkap"
+              aria-invalid={Boolean(actionState.errors?.name)}
             />
+            {actionState.errors?.name ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.name[0]}
+              </p>
+            ) : null}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
@@ -438,16 +605,25 @@ export function VotersClient({
               type="email"
               defaultValue={editing?.email ?? undefined}
               placeholder="nama@email.com"
+              aria-invalid={Boolean(actionState.errors?.email)}
             />
+            {actionState.errors?.email ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.email[0]}
+              </p>
+            ) : null}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="role">Role</Label>
             <Select
               name="role"
               defaultSelectedKey={editing?.role ?? "SISWA"}
               placeholder="Pilih role"
+              className="w-full"
             >
-              <SelectTrigger id="role" aria-label="Pilih role" />
+              <SelectTrigger id="role" aria-label="Pilih role">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem id="SISWA">SISWA</SelectItem>
                 <SelectItem id="OSIS">OSIS</SelectItem>
@@ -455,15 +631,26 @@ export function VotersClient({
                 <SelectItem id="GUKAR">GUKAR</SelectItem>
               </SelectContent>
             </Select>
+            {actionState.errors?.role ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.role[0]}
+              </p>
+            ) : null}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="generation">Angkatan (opsional)</Label>
             <Input
               id="generation"
               name="generation"
               defaultValue={editing?.generation ?? undefined}
               placeholder="34"
+              aria-invalid={Boolean(actionState.errors?.generation)}
             />
+            {actionState.errors?.generation ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.generation[0]}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -482,7 +669,6 @@ export function VotersClient({
         </form>
       </FormDialog>
 
-      {/* Dialog import excel */}
       <FormDialog
         open={importOpen}
         onOpenChange={setImportOpen}
@@ -490,15 +676,21 @@ export function VotersClient({
         description="Format: Nama | Email | Role | Angkatan — unduh template untuk contoh."
         isSubmitting={importPending}
       >
-        <form action={importAction} className="space-y-4">
+        <form action={importAction} className="space-y-4 w-full min-w-0">
           {importState.errors?.file ? (
             <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {importState.errors.file[0]}
             </p>
           ) : null}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="file">File Excel (.xlsx)</Label>
-            <Input id="file" name="file" type="file" accept=".xlsx" />
+            <Input
+              id="file"
+              name="file"
+              type="file"
+              accept=".xlsx"
+              aria-invalid={Boolean(importState.errors?.file)}
+            />
           </div>
           <p className="text-xs text-ink-muted">
             <a href="/api/admin/voters/template" className="underline">
@@ -517,10 +709,86 @@ export function VotersClient({
               Batal
             </Button>
             <Button type="submit" isDisabled={importPending}>
-              {importPending ? "Mengimpor…" : "Import"}
+              {importPending ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                  Mengimpor…
+                </>
+              ) : (
+                "Import"
+              )}
             </Button>
           </div>
         </form>
+      </FormDialog>
+
+      <FormDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        title="Export Token Pemilih"
+        description="Pilih pemilihan yang daftar tokennya ingin kamu unduh dalam file Excel (.xlsx)."
+      >
+        <div className="space-y-4 w-full min-w-0">
+          <div className="space-y-1.5">
+            <Label htmlFor="export_election_select">Pemilihan</Label>
+            <Select
+              selectedKey={selectedElection}
+              onSelectionChange={(key) =>
+                setSelectedElection(String(key ?? ""))
+              }
+              placeholder="Pilih pemilihan"
+              aria-label="Pilih pemilihan untuk ekspor token"
+              className="w-full"
+            >
+              <SelectTrigger
+                id="export_election_select"
+                aria-label="Pilih pemilihan"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {electionOptions.map((e) => (
+                  <SelectItem
+                    key={e.election_id}
+                    id={e.election_id}
+                    textValue={e.title}
+                  >
+                    <span className="truncate">{e.title}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onPress={() => setExportOpen(false)}
+            >
+              Batal
+            </Button>
+            <a
+              href={
+                selectedElection
+                  ? `/api/admin/voters/export?election_id=${selectedElection}`
+                  : "#"
+              }
+              onClick={(e) => {
+                if (!selectedElection) {
+                  e.preventDefault();
+                  toast.error("Pilih pemilihan terlebih dahulu.");
+                  return;
+                }
+                setExportOpen(false);
+              }}
+              className={buttonVariants({ variant: "default" })}
+            >
+              <FileDown className="size-4 mr-1.5" aria-hidden />
+              Unduh Excel
+            </a>
+          </div>
+        </div>
       </FormDialog>
     </div>
   );

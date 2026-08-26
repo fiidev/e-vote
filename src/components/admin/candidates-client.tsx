@@ -1,7 +1,13 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import {
   createCandidateAction,
@@ -11,6 +17,14 @@ import {
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +34,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { ActionState } from "@/types/admin";
@@ -50,11 +65,34 @@ export function CandidatesClient({
 }: CandidatesClientProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<CandidateRow | null>(null);
+  const [deletingCandidate, setDeletingCandidate] =
+    useState<CandidateRow | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
+
+  const [selectedElectionId, setSelectedElectionId] = useState<string>(
+    elections[0]?.election_id ?? "",
+  );
+
+  async function candidateFormAction(
+    prevState: ActionState,
+    formData: FormData,
+  ): Promise<ActionState> {
+    const candidateId = formData.get("candidate_id");
+    if (
+      candidateId &&
+      typeof candidateId === "string" &&
+      candidateId.trim() !== ""
+    ) {
+      return updateCandidateAction(prevState, formData);
+    }
+    return createCandidateAction(prevState, formData);
+  }
+
   // Reset dialog form key setiap kali dialog open/close atau editing berubah,
   // agar useActionState tidak leak error dari form sebelumnya.
   const [dialogKey, setDialogKey] = useState(0);
   const [actionState, formAction, isPending] = useActionState(
-    editing ? updateCandidateAction : createCandidateAction,
+    candidateFormAction,
     initialActionState,
   );
 
@@ -62,7 +100,6 @@ export function CandidatesClient({
   const prevPending = useRef(isPending);
   useEffect(() => {
     if (prevPending.current && !isPending) {
-      // Submit baru selesai
       if (actionState.ok && actionState.message) {
         toast.success(actionState.message);
         setDialogOpen(false);
@@ -75,25 +112,33 @@ export function CandidatesClient({
 
   function openCreate() {
     setEditing(null);
+    setSelectedElectionId(elections[0]?.election_id ?? "");
     setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }
 
   function openEdit(candidate: CandidateRow) {
     setEditing(candidate);
+    setSelectedElectionId(candidate.election_id);
     setDialogKey((k) => k + 1);
     setDialogOpen(true);
   }
 
-  async function handleDelete(candidateId: string, name: string) {
-    const formData = new FormData();
-    formData.set("candidate_id", candidateId);
-    const result = await deleteCandidateAction(formData);
-    if (result.ok) {
-      toast.success(result.message ?? `${name} berhasil dihapus.`);
-    } else {
-      toast.error(result.errors?._form?.[0] ?? "Gagal menghapus.");
-    }
+  function confirmDelete() {
+    if (!deletingCandidate) return;
+    startDeleteTransition(async () => {
+      const formData = new FormData();
+      formData.set("candidate_id", deletingCandidate.candidate_id);
+      const result = await deleteCandidateAction(formData);
+      if (result.ok) {
+        toast.success(
+          result.message ?? `${deletingCandidate.name} berhasil dihapus.`,
+        );
+        setDeletingCandidate(null);
+      } else {
+        toast.error(result.errors?._form?.[0] ?? "Gagal menghapus kandidat.");
+      }
+    });
   }
 
   const hasElections = elections.length > 0;
@@ -128,7 +173,7 @@ export function CandidatesClient({
                   {c.name[0]?.toUpperCase() ?? "?"}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium">{c.name}</p>
+                  <p className="font-medium truncate">{c.name}</p>
                   <p className="text-xs text-ink-muted">{c.class_name}</p>
                 </div>
               </div>
@@ -164,7 +209,7 @@ export function CandidatesClient({
                   size="icon"
                   aria-label={`Hapus ${c.name}`}
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onPress={() => handleDelete(c.candidate_id, c.name)}
+                  onPress={() => setDeletingCandidate(c)}
                 >
                   <Trash2 className="size-4" aria-hidden />
                 </Button>
@@ -195,6 +240,44 @@ export function CandidatesClient({
         }
       />
 
+      {/* Delete Confirmation Alert Dialog */}
+      <AlertDialog
+        isOpen={deletingCandidate !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeletingCandidate(null);
+        }}
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>Hapus Kandidat</AlertDialogTitle>
+          <AlertDialogDescription>
+            Apakah kamu yakin ingin menghapus kandidat{" "}
+            <span className="font-semibold text-ink">
+              {deletingCandidate?.name} (No.{" "}
+              {deletingCandidate?.candidate_number})
+            </span>
+            ? Tindakan ini tidak dapat dibatalkan.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel isDisabled={isDeleting}>Batal</AlertDialogCancel>
+          <Button
+            variant="destructive"
+            isDisabled={isDeleting}
+            onPress={confirmDelete}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Menghapus…
+              </>
+            ) : (
+              "Hapus"
+            )}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialog>
+
+      {/* Form Dialog Create / Edit Candidate */}
       <FormDialog
         key={dialogKey}
         open={dialogOpen}
@@ -203,7 +286,7 @@ export function CandidatesClient({
         description="Lengkapi data kandidat di bawah."
         isSubmitting={isPending}
       >
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="space-y-4 w-full min-w-0">
           {editing ? (
             <>
               <input
@@ -216,16 +299,53 @@ export function CandidatesClient({
                 name="election_id"
                 value={editing.election_id}
               />
+              <div className="space-y-1.5">
+                <Label>Pemilihan</Label>
+                <div className="flex min-h-9 w-full items-center rounded-2xl border border-transparent bg-input/40 px-3 py-2 text-sm text-ink font-medium">
+                  <span className="truncate">{editing.election.title}</span>
+                </div>
+              </div>
             </>
-          ) : null}
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="election_select">Pemilihan</Label>
+              <Select
+                name="election_id"
+                selectedKey={selectedElectionId}
+                onSelectionChange={(key) =>
+                  setSelectedElectionId(String(key ?? ""))
+                }
+                placeholder="Pilih pemilihan"
+                aria-label="Pilih pemilihan untuk kandidat"
+                className="w-full"
+              >
+                <SelectTrigger
+                  id="election_select"
+                  aria-label="Pilih pemilihan"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {elections.map((e) => (
+                    <SelectItem
+                      key={e.election_id}
+                      id={e.election_id}
+                      textValue={e.title}
+                    >
+                      <span className="truncate">{e.title}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {actionState.errors?.election_id ? (
+                <p className="text-xs text-destructive">
+                  {actionState.errors.election_id[0]}
+                </p>
+              ) : null}
+            </div>
+          )}
 
-          {actionState.errors?._form ? (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {actionState.errors._form[0]}
-            </p>
-          ) : null}
-
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="candidate_number">Nomor Urut</Label>
             <Input
               id="candidate_number"
@@ -234,64 +354,64 @@ export function CandidatesClient({
               min={1}
               defaultValue={editing?.candidate_number ?? undefined}
               placeholder="1"
+              aria-invalid={Boolean(actionState.errors?.candidate_number)}
             />
+            {actionState.errors?.candidate_number ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.candidate_number[0]}
+              </p>
+            ) : null}
           </div>
 
-          {!editing ? (
-            <div className="space-y-2">
-              <Label htmlFor="election_select">Pemilihan</Label>
-              <Select
-                name="election_id"
-                defaultSelectedKey={elections[0]?.election_id}
-                placeholder="Pilih pemilihan"
-                aria-label="Pilih pemilihan untuk kandidat"
-              >
-                <SelectTrigger
-                  id="election_select"
-                  aria-label="Pilih pemilihan"
-                />
-                <SelectContent>
-                  {elections.map((e) => (
-                    <SelectItem key={e.election_id} id={e.election_id}>
-                      {e.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : null}
-
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="name">Nama Kandidat</Label>
             <Input
               id="name"
               name="name"
               defaultValue={editing?.name ?? undefined}
               placeholder="Nama lengkap"
+              aria-invalid={Boolean(actionState.errors?.name)}
             />
+            {actionState.errors?.name ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.name[0]}
+              </p>
+            ) : null}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="class_name">Kelas</Label>
             <Input
               id="class_name"
               name="class_name"
               defaultValue={editing?.class_name ?? undefined}
               placeholder="XI-1"
+              aria-invalid={Boolean(actionState.errors?.class_name)}
             />
+            {actionState.errors?.class_name ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.class_name[0]}
+              </p>
+            ) : null}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="photo_url">URL Foto (opsional)</Label>
             <Input
               id="photo_url"
               name="photo_url"
               defaultValue={editing?.photo_url ?? undefined}
               placeholder="https://…"
+              aria-invalid={Boolean(actionState.errors?.photo_url)}
             />
+            {actionState.errors?.photo_url ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.photo_url[0]}
+              </p>
+            ) : null}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="vision">Visi</Label>
             <Textarea
               id="vision"
@@ -299,10 +419,16 @@ export function CandidatesClient({
               defaultValue={editing?.vision ?? undefined}
               placeholder="Visi kandidat"
               rows={3}
+              aria-invalid={Boolean(actionState.errors?.vision)}
             />
+            {actionState.errors?.vision ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.vision[0]}
+              </p>
+            ) : null}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="mission">Misi</Label>
             <Textarea
               id="mission"
@@ -310,7 +436,13 @@ export function CandidatesClient({
               defaultValue={editing?.mission ?? undefined}
               placeholder="Misi kandidat"
               rows={3}
+              aria-invalid={Boolean(actionState.errors?.mission)}
             />
+            {actionState.errors?.mission ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.mission[0]}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">

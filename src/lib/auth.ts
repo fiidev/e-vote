@@ -15,6 +15,7 @@ function isAuthorizedEmail(email: string): boolean {
 }
 
 export const auth = betterAuth({
+  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
@@ -40,6 +41,21 @@ export const auth = betterAuth({
             });
           }
           return { data: user };
+        },
+      },
+    },
+    session: {
+      create: {
+        before: async (session) => {
+          const user = await db.adminUser.findUnique({
+            where: { id: session.userId },
+          });
+          if (!user || !isAuthorizedEmail(user.email)) {
+            throw new APIError("FORBIDDEN", {
+              message: "Email ini tidak memiliki akses.",
+            });
+          }
+          return { data: session };
         },
       },
     },

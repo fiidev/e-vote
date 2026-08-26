@@ -4,12 +4,14 @@ import {
   GraduationCap,
   LayoutDashboard,
   ListChecks,
+  Loader2,
   LogOut,
   Radio,
   Users,
   Vote,
 } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -40,6 +42,27 @@ interface AppSidebarProps {
 /** Sidebar admin — nav aktif mengikuti pathname, footer berisi user + logout. */
 export function AppSidebar({ user }: AppSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleSignOut() {
+    setIsLoggingOut(true);
+    try {
+      await signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.replace("/login");
+            router.refresh();
+          },
+        },
+      });
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      router.replace("/login");
+      router.refresh();
+    }
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -94,10 +117,15 @@ export function AppSidebar({ user }: AppSidebarProps) {
             variant="outline"
             size="sm"
             className="w-full justify-start gap-2"
-            onClick={() => signOut({ callbackURL: "/login" })}
+            isDisabled={isLoggingOut}
+            onPress={handleSignOut}
           >
-            <LogOut className="size-4" aria-hidden />
-            Keluar
+            {isLoggingOut ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <LogOut className="size-4" aria-hidden />
+            )}
+            {isLoggingOut ? "Keluar…" : "Keluar"}
           </Button>
         </div>
       </SidebarFooter>

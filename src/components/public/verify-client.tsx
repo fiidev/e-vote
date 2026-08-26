@@ -19,11 +19,6 @@ export function VerifyClient() {
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const [digits, setDigits] = useState<string[]>(Array(TOKEN_LENGTH).fill(""));
   const [activeIndex, setActiveIndex] = useState(0);
-  const [_submitCount, setSubmitCount] = useState(0);
-
-  useEffect(() => {
-    if (isPending) setSubmitCount((n) => n + 1);
-  }, [isPending]);
 
   useEffect(() => {
     if (state?.error) {
@@ -95,6 +90,7 @@ export function VerifyClient() {
           alt=""
           width={384}
           height={618}
+          priority
           className="absolute left-0 bottom-0 w-96 h-[618px] object-cover opacity-60"
         />
 
@@ -148,9 +144,9 @@ export function VerifyClient() {
                     onChange={(e) => handleChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e.key)}
                     onFocus={() => setActiveIndex(i)}
-                    className={`w-16 h-20 text-center text-2xl font-bold rounded-lg border-2 outline-none transition-all ${
+                    className={`w-16 h-20 text-center text-2xl font-bold rounded-lg border-2 outline-none transition-all duration-200 ease-out ${
                       digit
-                        ? "bg-cyan-950 text-white border-cyan-950"
+                        ? "bg-cyan-950 text-white border-cyan-950 shadow-md scale-102"
                         : "bg-transparent text-cyan-950 border-cyan-950/20"
                     } ${
                       activeIndex === i
@@ -168,7 +164,7 @@ export function VerifyClient() {
             <Button
               type="submit"
               isDisabled={isPending || token.length < TOKEN_LENGTH}
-              className="h-14 w-36 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40"
+              className="h-14 w-36 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 transition-all duration-200 ease-out active:scale-95 hover:shadow-lg cursor-pointer"
             >
               {isPending ? "Memeriksa…" : "Lanjut"}
             </Button>

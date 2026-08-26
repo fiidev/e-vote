@@ -14,6 +14,7 @@ export function LandingClient() {
           alt=""
           width={384}
           height={618}
+          priority
           className="absolute left-0 bottom-0 w-96 h-[618px] object-cover"
         />
 
@@ -22,6 +23,7 @@ export function LandingClient() {
           alt=""
           width={384}
           height={668}
+          priority
           className="absolute right-0 top-[132px] w-96 h-[668px] object-cover"
         />
 
@@ -31,6 +33,7 @@ export function LandingClient() {
             alt="Logo E-Pilketos"
             width={128}
             height={128}
+            priority
             className="size-32 object-cover rounded-full"
           />
         </div>
@@ -45,7 +48,7 @@ export function LandingClient() {
           </p>
           <LinkButton
             href="/verify"
-            className="mt-4 h-14 px-10 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900"
+            className="mt-4 h-14 px-10 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 transition-all duration-200 ease-out active:scale-95 hover:shadow-lg"
           >
             Ayo Pilih
           </LinkButton>

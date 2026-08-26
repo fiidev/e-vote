@@ -7,6 +7,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 
 interface CandidateLive {
@@ -113,11 +114,17 @@ export function LiveCountClient({ elections, defaultElectionId }: Props) {
               <SelectTrigger
                 className="w-72 bg-white/80 backdrop-blur"
                 aria-label="Pilih pemilihan untuk live count"
-              />
+              >
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {elections.map((e) => (
-                  <SelectItem key={e.election_id} id={e.election_id}>
-                    {e.title}
+                  <SelectItem
+                    key={e.election_id}
+                    id={e.election_id}
+                    textValue={e.title}
+                  >
+                    <span className="truncate">{e.title}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
