@@ -53,7 +53,19 @@ const booleanFromForm = z.preprocess((value) => {
   return false;
 }, z.boolean());
 
-export const electionCreateSchema = z.object({
+const optionalUrl = (field: string) =>
+  z.preprocess(
+    (value) =>
+      typeof value === "string" && value.trim() !== ""
+        ? value.trim()
+        : undefined,
+    z
+      .string()
+      .url(`${field} harus berupa format URL yang valid (cth: https://...)`)
+      .optional(),
+  );
+
+export const electionBaseSchema = z.object({
   title: requiredString("Judul"),
   description: optionalString(),
   start_time: isoDate("Waktu mulai"),
@@ -63,7 +75,11 @@ export const electionCreateSchema = z.object({
   eligible_roles: z.preprocess(
     (value) => {
       if (Array.isArray(value)) return value;
-      if (typeof value === "string") return value.split(",");
+      if (typeof value === "string")
+        return value
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean);
       return [];
     },
     z.array(roleEnum).min(1, "Pilih minimal satu role yang berhak memilih"),
@@ -80,32 +96,84 @@ export const electionCreateSchema = z.object({
   }, z.record(roleEnum, z.number().min(0).max(100)).optional()),
 });
 
-export const electionUpdateSchema = electionCreateSchema.partial().extend({
-  election_id: z.string().uuid(),
-});
+export const electionCreateSchema = electionBaseSchema.refine(
+  (data) => data.start_time < data.end_time,
+  {
+    message: "Waktu selesai harus lebih lambat dari waktu mulai",
+    path: ["end_time"],
+  },
+);
+
+export const electionUpdateSchema = electionBaseSchema
+  .partial()
+  .extend({
+    election_id: z.string().uuid("ID pemilihan tidak valid"),
+  })
+  .refine(
+    (data) => {
+      if (data.start_time && data.end_time) {
+        return data.start_time < data.end_time;
+      }
+      return true;
+    },
+    {
+      message: "Waktu selesai harus lebih lambat dari waktu mulai",
+      path: ["end_time"],
+    },
+  );
+
+const preprocessNumber = (value: unknown) => {
+  if (typeof value === "number") return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? value : parsed;
+  }
+  return undefined;
+};
 
 export const candidateCreateSchema = z.object({
-  election_id: z.string().uuid(),
+  election_id: z.string().uuid("Pilihan pemilihan wajib dipilih"),
   candidate_number: z.preprocess(
-    (value) => (typeof value === "string" ? Number(value) : value),
-    z.number().int().min(1, "Nomor urut minimal 1"),
+    preprocessNumber,
+    z
+      .number({
+        message: "Nomor urut wajib diisi dengan angka",
+      })
+      .int("Nomor urut harus berupa bilangan bulat")
+      .min(1, "Nomor urut minimal 1"),
   ),
   name: requiredString("Nama kandidat"),
   class_name: requiredString("Kelas"),
-  photo_url: optionalString(),
+  photo_url: optionalUrl("URL Foto"),
   vision: requiredString("Visi"),
   mission: requiredString("Misi"),
 });
 
-export const candidateUpdateSchema = candidateCreateSchema.partial().extend({
-  candidate_id: z.string().uuid(),
+export const candidateUpdateSchema = z.object({
+  candidate_id: z.string().uuid("ID kandidat tidak valid"),
+  election_id: z.string().uuid("Pilihan pemilihan wajib dipilih").optional(),
+  candidate_number: z.preprocess(
+    preprocessNumber,
+    z
+      .number({
+        message: "Nomor urut harus berupa angka",
+      })
+      .int("Nomor urut harus berupa bilangan bulat")
+      .min(1, "Nomor urut minimal 1")
+      .optional(),
+  ),
+  name: requiredString("Nama kandidat").optional(),
+  class_name: requiredString("Kelas").optional(),
+  photo_url: optionalUrl("URL Foto"),
+  vision: requiredString("Visi").optional(),
+  mission: requiredString("Misi").optional(),
 });
 
 export const voterCreateSchema = z.object({
   name: requiredString("Nama"),
   email: z.preprocess(
     (value) => (typeof value === "string" ? value.trim().toLowerCase() : ""),
-    z.string().email("Email tidak valid"),
+    z.string().email("Format email tidak valid"),
   ),
   role: z.preprocess(
     (value) =>
@@ -116,21 +184,21 @@ export const voterCreateSchema = z.object({
 });
 
 export const voterUpdateSchema = voterCreateSchema.partial().extend({
-  voter_id: z.string().uuid(),
+  voter_id: z.string().uuid("ID pemilih tidak valid"),
 });
 
 export const voterEmailUpdateSchema = z.object({
-  voter_id: z.string().uuid(),
+  voter_id: z.string().uuid("ID pemilih tidak valid"),
   email: z.preprocess(
     (value) => (typeof value === "string" ? value.trim().toLowerCase() : ""),
-    z.string().email("Email tidak valid"),
+    z.string().email("Format email tidak valid"),
   ),
 });
 
-export type ElectionCreateInput = z.output<typeof electionCreateSchema>;
-export type ElectionUpdateInput = z.output<typeof electionUpdateSchema>;
-export type CandidateCreateInput = z.output<typeof candidateCreateSchema>;
-export type CandidateUpdateInput = z.output<typeof candidateUpdateSchema>;
-export type VoterCreateInput = z.output<typeof voterCreateSchema>;
-export type VoterUpdateInput = z.output<typeof voterUpdateSchema>;
-export type VoterEmailUpdateInput = z.output<typeof voterEmailUpdateSchema>;
+export type ElectionCreateInput = z.infer<typeof electionCreateSchema>;
+export type ElectionUpdateInput = z.infer<typeof electionUpdateSchema>;
+export type CandidateCreateInput = z.infer<typeof candidateCreateSchema>;
+export type CandidateUpdateInput = z.infer<typeof candidateUpdateSchema>;
+export type VoterCreateInput = z.infer<typeof voterCreateSchema>;
+export type VoterUpdateInput = z.infer<typeof voterUpdateSchema>;
+export type VoterEmailUpdateInput = z.infer<typeof voterEmailUpdateSchema>;

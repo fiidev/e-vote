@@ -13,6 +13,7 @@ const { dbMock } = vi.hoisted(() => ({
     candidate: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
@@ -23,6 +24,12 @@ const { dbMock } = vi.hoisted(() => ({
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      count: vi.fn(),
+    },
+    vote: {
+      count: vi.fn(),
+    },
+    voteToken: {
       count: vi.fn(),
     },
     emailLog: {
@@ -81,8 +88,8 @@ describe("Election CRUD", () => {
     );
     await createElection({
       title: "Pilketos 2026",
-      start_time: new Date(),
-      end_time: new Date(),
+      start_time: new Date("2026-08-01"),
+      end_time: new Date("2026-08-02"),
       is_active: true,
       is_weighted: false,
       eligible_roles: ["SISWA"],
@@ -105,7 +112,16 @@ describe("Election CRUD", () => {
     expect(call.data.role_weights).toBe(Prisma.JsonNull);
   });
 
-  it("deleteElection memanggil delete", async () => {
+  it("deleteElection memblokir jika ada suara masuk", async () => {
+    dbMock.vote.count.mockResolvedValue(5);
+    dbMock.voteToken.count.mockResolvedValue(5);
+    await expect(deleteElection("e-1")).rejects.toThrow("ELECTION_HAS_VOTES");
+    expect(dbMock.election.delete).not.toHaveBeenCalled();
+  });
+
+  it("deleteElection memanggil delete jika aman", async () => {
+    dbMock.vote.count.mockResolvedValue(0);
+    dbMock.voteToken.count.mockResolvedValue(0);
     dbMock.election.delete.mockResolvedValue({});
     await deleteElection("e-1");
     expect(dbMock.election.delete).toHaveBeenCalledWith({
@@ -135,7 +151,22 @@ describe("Candidate CRUD", () => {
     );
   });
 
-  it("createCandidate menyimpan data", async () => {
+  it("createCandidate memblokir jika nomor urut duplikat", async () => {
+    dbMock.candidate.findFirst.mockResolvedValue({ candidate_id: "c-0" });
+    await expect(
+      createCandidate({
+        election_id: "e-1",
+        candidate_number: 1,
+        name: "Budi",
+        class_name: "XI-1",
+        vision: "visi",
+        mission: "misi",
+      }),
+    ).rejects.toThrow("CANDIDATE_NUMBER_EXISTS");
+  });
+
+  it("createCandidate menyimpan data ketika valid", async () => {
+    dbMock.candidate.findFirst.mockResolvedValue(null);
     dbMock.candidate.create.mockImplementation((args: unknown) =>
       Promise.resolve(args),
     );
@@ -162,16 +193,29 @@ describe("Candidate CRUD", () => {
   });
 
   it("updateCandidate memisahkan id dari payload", async () => {
+    dbMock.candidate.findUnique.mockResolvedValue({
+      candidate_id: "c-1",
+      election_id: "e-1",
+      candidate_number: 1,
+    });
+    dbMock.candidate.findFirst.mockResolvedValue(null);
     dbMock.candidate.update.mockImplementation((args: unknown) =>
       Promise.resolve(args),
     );
     await updateCandidate({ candidate_id: "c-1", name: "Budi" });
     const call = dbMock.candidate.update.mock.calls[0][0];
     expect(call.where).toEqual({ candidate_id: "c-1" });
-    expect(call.data).toEqual({ name: "Budi", photo_url: "" });
+    expect(call.data).toEqual({ name: "Budi" });
   });
 
-  it("deleteCandidate memanggil delete", async () => {
+  it("deleteCandidate memblokir jika sudah ada suara masuk", async () => {
+    dbMock.vote.count.mockResolvedValue(3);
+    await expect(deleteCandidate("c-1")).rejects.toThrow("CANDIDATE_HAS_VOTES");
+    expect(dbMock.candidate.delete).not.toHaveBeenCalled();
+  });
+
+  it("deleteCandidate memanggil delete ketika aman", async () => {
+    dbMock.vote.count.mockResolvedValue(0);
     dbMock.candidate.delete.mockResolvedValue({});
     await deleteCandidate("c-1");
     expect(dbMock.candidate.delete).toHaveBeenCalledWith({
@@ -249,7 +293,16 @@ describe("Voter CRUD", () => {
     expect(call.data.role).toBe("OSIS");
   });
 
-  it("deleteVoter memanggil delete", async () => {
+  it("deleteVoter memblokir jika sudah memilih", async () => {
+    dbMock.vote.count.mockResolvedValue(1);
+    dbMock.voteToken.count.mockResolvedValue(1);
+    await expect(deleteVoter("v-1")).rejects.toThrow("VOTER_HAS_VOTED");
+    expect(dbMock.voter.delete).not.toHaveBeenCalled();
+  });
+
+  it("deleteVoter memanggil delete ketika aman", async () => {
+    dbMock.vote.count.mockResolvedValue(0);
+    dbMock.voteToken.count.mockResolvedValue(0);
     dbMock.voter.delete.mockResolvedValue({});
     await deleteVoter("v-1");
     expect(dbMock.voter.delete).toHaveBeenCalledWith({

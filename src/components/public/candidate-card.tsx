@@ -27,22 +27,31 @@ export function CandidateCard({
     .toUpperCase();
 
   return (
-    <button
-      type="button"
+    // biome-ignore lint/a11y/useSemanticElements: interactive candidate card containing child modal trigger
+    <div
+      role="radio"
+      aria-checked={Boolean(isSelected)}
+      tabIndex={0}
       onClick={() => onSelect(candidate)}
-      className={`relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex cursor-pointer transition-all text-left ${
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(candidate);
+        }
+      }}
+      className={`group relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex cursor-pointer text-left transition-all duration-300 ease-out border-4 ${
         isSelected
-          ? "ring-4 ring-cyan-950"
-          : "hover:ring-2 hover:ring-cyan-950/40"
+          ? "border-black shadow-2xl bg-orange-200/80"
+          : "border-transparent hover:border-black hover:shadow-lg"
       }`}
     >
-      <div className="relative w-48 h-64 shrink-0">
+      <div className="relative w-48 h-64 shrink-0 overflow-hidden">
         {candidate.photo_url ? (
           // biome-ignore lint/performance/noImgElement: dynamic URL from DB
           <img
             src={candidate.photo_url}
             alt={`Foto ${candidate.name}`}
-            className="w-48 h-64 rounded-3xl object-cover"
+            className="w-48 h-64 rounded-3xl object-cover transition-transform duration-500 ease-out group-hover:scale-105"
           />
         ) : (
           <div className="w-48 h-64 rounded-3xl bg-ink/5 flex items-center justify-center">
@@ -70,11 +79,11 @@ export function CandidateCard({
             e.stopPropagation();
             onShowVision(candidate);
           }}
-          className="mt-4 h-14 w-60 rounded-full border-2 border-cyan-950 bg-transparent text-cyan-950 text-xl font-semibold font-heading capitalize tracking-wide transition-colors hover:bg-cyan-950/10"
+          className="mt-4 h-14 w-60 rounded-full border-2 border-black bg-transparent text-black text-xl font-semibold font-heading capitalize tracking-wide transition-all duration-200 ease-out hover:bg-black hover:text-white active:scale-95 cursor-pointer"
         >
           Lihat Visi &amp; Misi
         </button>
       </div>
-    </button>
+    </div>
   );
 }

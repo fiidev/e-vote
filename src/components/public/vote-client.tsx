@@ -31,13 +31,9 @@ export function VoteClient({
   );
   const formRef = useRef<HTMLFormElement>(null);
   const [selected, setSelected] = useState<CandidateCardData | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [visionCandidate, setVisionCandidate] =
     useState<CandidateCardData | null>(null);
-  const [_submitCount, setSubmitCount] = useState(0);
-
-  useEffect(() => {
-    if (isPending) setSubmitCount((n) => n + 1);
-  }, [isPending]);
 
   useEffect(() => {
     if (state?.error) {
@@ -52,7 +48,10 @@ export function VoteClient({
   }, [state?.error, router]);
 
   const confirm = () => {
-    if (selected) formRef.current?.requestSubmit();
+    if (selected) {
+      setConfirmOpen(false);
+      formRef.current?.requestSubmit();
+    }
   };
 
   return (
@@ -131,16 +130,16 @@ export function VoteClient({
 
         <button
           type="button"
-          onClick={confirm}
+          onClick={() => setConfirmOpen(true)}
           disabled={!selected || isPending}
-          className="absolute right-[49px] bottom-[45px] h-14 w-32 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="absolute right-[49px] bottom-[45px] h-14 w-32 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 ease-out active:scale-95 hover:shadow-lg cursor-pointer"
         >
           {isPending ? "Mengirim…" : "Kirim"}
         </button>
 
         <Dialog
-          isOpen={selected !== null}
-          onOpenChange={(open) => !open && setSelected(null)}
+          isOpen={confirmOpen && selected !== null}
+          onOpenChange={setConfirmOpen}
         >
           <DialogHeader>
             <DialogTitle>Konfirmasi Pilihan</DialogTitle>
@@ -152,7 +151,7 @@ export function VoteClient({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onPress={() => setSelected(null)}>
+            <Button variant="outline" onPress={() => setConfirmOpen(false)}>
               Batal
             </Button>
             <Button onPress={confirm} isDisabled={isPending}>

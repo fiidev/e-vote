@@ -45,12 +45,13 @@ export async function GET(request: Request) {
     used: t.is_used ? "Ya" : "Belum",
   }));
 
+  const safeTitle = election.title.replace(/[^a-zA-Z0-9_-]/g, "_");
   const buffer = buildTokenListBuffer(rows);
   return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type":
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="token-${election.title.replaceAll(" ", "-")}.xlsx"`,
+      "Content-Disposition": `attachment; filename="token-${safeTitle}.xlsx"`,
     },
   });
 }

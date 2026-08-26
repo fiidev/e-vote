@@ -19,6 +19,14 @@ import {
 import { DataTable } from "@/components/admin/data-table";
 import { EmptyState } from "@/components/admin/empty-state";
 import { FormDialog } from "@/components/admin/form-dialog";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -53,16 +61,37 @@ const initialActionState: ActionState = { ok: false };
 export function ElectionsClient({ elections }: ElectionsClientProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ElectionRow | null>(null);
+  const [deletingElection, setDeletingElection] = useState<ElectionRow | null>(
+    null,
+  );
+  const [tokenElection, setTokenElection] = useState<ElectionRow | null>(null);
+  const [emailElection, setEmailElection] = useState<ElectionRow | null>(null);
   const [isWeighted, setIsWeighted] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [roleWeights, setRoleWeights] = useState<Record<string, string>>({});
-  // Reset dialog form key setiap kali dialog open/close atau editing berubah,
-  // agar useActionState tidak leak error dari form sebelumnya.
+
   const [dialogKey, setDialogKey] = useState(0);
+
+  async function electionFormAction(
+    prevState: ActionState,
+    formData: FormData,
+  ): Promise<ActionState> {
+    const electionId = formData.get("election_id");
+    if (
+      electionId &&
+      typeof electionId === "string" &&
+      electionId.trim() !== ""
+    ) {
+      return updateElectionAction(prevState, formData);
+    }
+    return createElectionAction(prevState, formData);
+  }
+
   const [actionState, formAction, isPending] = useActionState(
-    editing ? updateElectionAction : createElectionAction,
+    electionFormAction,
     initialActionState,
   );
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [tokenPending, startTokenTransition] = useTransition();
   const [emailPending, startEmailTransition] = useTransition();
 
@@ -80,41 +109,51 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
     prevPending.current = isPending;
   }, [isPending, actionState]);
 
-  async function handleGenerateTokens(electionId: string) {
+  function handleGenerateTokens() {
+    if (!tokenElection) return;
     startTokenTransition(async () => {
       const formData = new FormData();
-      formData.set("election_id", electionId);
+      formData.set("election_id", tokenElection.election_id);
       const result = await generateTokensAction(formData);
       if (result.ok) {
         toast.success(result.message ?? "Token berhasil dibuat.");
+        setTokenElection(null);
       } else {
         toast.error(result.errors?._form?.[0] ?? "Gagal membuat token.");
       }
     });
   }
 
-  async function handleSendEmails(electionId: string) {
+  function handleSendEmails() {
+    if (!emailElection) return;
     startEmailTransition(async () => {
       const formData = new FormData();
-      formData.set("election_id", electionId);
+      formData.set("election_id", emailElection.election_id);
       const result = await sendTokensEmailAction(formData);
       if (result.ok) {
         toast.success(result.message ?? "Email berhasil dikirim.");
+        setEmailElection(null);
       } else {
         toast.error(result.errors?._form?.[0] ?? "Gagal mengirim email.");
       }
     });
   }
 
-  async function handleDeleteElection(electionId: string, title: string) {
-    const formData = new FormData();
-    formData.set("election_id", electionId);
-    const result = await deleteElectionAction(formData);
-    if (result.ok) {
-      toast.success(result.message ?? `${title} berhasil dihapus.`);
-    } else {
-      toast.error(result.errors?._form?.[0] ?? "Gagal menghapus.");
-    }
+  function confirmDelete() {
+    if (!deletingElection) return;
+    startDeleteTransition(async () => {
+      const formData = new FormData();
+      formData.set("election_id", deletingElection.election_id);
+      const result = await deleteElectionAction(formData);
+      if (result.ok) {
+        toast.success(
+          result.message ?? `${deletingElection.title} berhasil dihapus.`,
+        );
+        setDeletingElection(null);
+      } else {
+        toast.error(result.errors?._form?.[0] ?? "Gagal menghapus.");
+      }
+    });
   }
 
   function openCreate() {
@@ -223,27 +262,17 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  isDisabled={tokenPending}
-                  onPress={() => handleGenerateTokens(e.election_id)}
+                  onPress={() => setTokenElection(e)}
                 >
-                  {tokenPending ? (
-                    <Loader2 className="size-4 animate-spin" aria-hidden />
-                  ) : (
-                    <KeyRound className="size-4" aria-hidden />
-                  )}
+                  <KeyRound className="size-4" aria-hidden />
                   Token
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  isDisabled={emailPending}
-                  onPress={() => handleSendEmails(e.election_id)}
+                  onPress={() => setEmailElection(e)}
                 >
-                  {emailPending ? (
-                    <Loader2 className="size-4 animate-spin" aria-hidden />
-                  ) : (
-                    <Send className="size-4" aria-hidden />
-                  )}
+                  <Send className="size-4" aria-hidden />
                   Kirim Email
                 </Button>
                 <Button
@@ -259,7 +288,7 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                   size="icon"
                   aria-label={`Hapus ${e.title}`}
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onPress={() => handleDeleteElection(e.election_id, e.title)}
+                  onPress={() => setDeletingElection(e)}
                 >
                   <Trash2 className="size-4" aria-hidden />
                 </Button>
@@ -283,6 +312,109 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
         }
       />
 
+      {/* Delete Election Confirmation Dialog */}
+      <AlertDialog
+        isOpen={deletingElection !== null}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) setDeletingElection(null);
+        }}
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>Hapus Pemilihan</AlertDialogTitle>
+          <AlertDialogDescription>
+            Apakah kamu yakin ingin menghapus pemilihan{" "}
+            <span className="font-semibold text-ink">
+              {deletingElection?.title}
+            </span>
+            ? Pemilihan yang sudah memiliki suara tidak dapat dihapus demi
+            integritas data.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel isDisabled={isDeleting}>Batal</AlertDialogCancel>
+          <Button
+            variant="destructive"
+            isDisabled={isDeleting}
+            onPress={confirmDelete}
+          >
+            {isDeleting ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Menghapus…
+              </>
+            ) : (
+              "Hapus"
+            )}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialog>
+
+      {/* Generate Tokens Confirmation Dialog */}
+      <AlertDialog
+        isOpen={tokenElection !== null}
+        onOpenChange={(open) => {
+          if (!open && !tokenPending) setTokenElection(null);
+        }}
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>Generate Token Pemilihan</AlertDialogTitle>
+          <AlertDialogDescription>
+            Sistem akan membuat token 8-digit baru untuk semua pemilih dengan
+            role yang berhak memilih di{" "}
+            <span className="font-semibold text-ink">
+              {tokenElection?.title}
+            </span>
+            . Pemilih yang sudah memiliki token akan dilewati.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel isDisabled={tokenPending}>Batal</AlertDialogCancel>
+          <Button isDisabled={tokenPending} onPress={handleGenerateTokens}>
+            {tokenPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Membuat Token…
+              </>
+            ) : (
+              "Generate Token"
+            )}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialog>
+
+      {/* Send Email Confirmation Dialog */}
+      <AlertDialog
+        isOpen={emailElection !== null}
+        onOpenChange={(open) => {
+          if (!open && !emailPending) setEmailElection(null);
+        }}
+      >
+        <AlertDialogHeader>
+          <AlertDialogTitle>Kirim Email Token Massal</AlertDialogTitle>
+          <AlertDialogDescription>
+            Kirim email token voting ke seluruh pemilih di{" "}
+            <span className="font-semibold text-ink">
+              {emailElection?.title}
+            </span>{" "}
+            yang belum menerima email?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel isDisabled={emailPending}>Batal</AlertDialogCancel>
+          <Button isDisabled={emailPending} onPress={handleSendEmails}>
+            {emailPending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+                Mengirim Email…
+              </>
+            ) : (
+              "Kirim Email"
+            )}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialog>
+
+      {/* Create / Edit Election Dialog */}
       <FormDialog
         key={dialogKey}
         open={dialogOpen}
@@ -291,7 +423,7 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
         description="Atur jadwal, role pemilih, dan sistem perhitungan suara."
         isSubmitting={isPending}
       >
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="space-y-4 w-full min-w-0">
           <input
             type="hidden"
             name="election_id"
@@ -304,28 +436,40 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
             </p>
           ) : null}
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="title">Judul</Label>
             <Input
               id="title"
               name="title"
               defaultValue={editing?.title ?? undefined}
               placeholder="Pemilihan Ketua OSIS 2026"
+              aria-invalid={Boolean(actionState.errors?.title)}
             />
+            {actionState.errors?.title ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.title[0]}
+              </p>
+            ) : null}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor="description">Deskripsi (opsional)</Label>
             <Textarea
               id="description"
               name="description"
               defaultValue={editing?.description ?? undefined}
               rows={2}
+              aria-invalid={Boolean(actionState.errors?.description)}
             />
+            {actionState.errors?.description ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.description[0]}
+              </p>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="start_time">Mulai</Label>
               <Input
                 id="start_time"
@@ -334,9 +478,15 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                 defaultValue={
                   editing ? toLocalInput(editing.start_time) : undefined
                 }
+                aria-invalid={Boolean(actionState.errors?.start_time)}
               />
+              {actionState.errors?.start_time ? (
+                <p className="text-xs text-destructive">
+                  {actionState.errors.start_time[0]}
+                </p>
+              ) : null}
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="end_time">Selesai</Label>
               <Input
                 id="end_time"
@@ -345,11 +495,17 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                 defaultValue={
                   editing ? toLocalInput(editing.end_time) : undefined
                 }
+                aria-invalid={Boolean(actionState.errors?.end_time)}
               />
+              {actionState.errors?.end_time ? (
+                <p className="text-xs text-destructive">
+                  {actionState.errors.end_time[0]}
+                </p>
+              ) : null}
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Role yang Berhak Memilih</Label>
             <div className="flex flex-wrap gap-2">
               {ROLE_OPTIONS.map((role) => (
@@ -369,6 +525,11 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                 </span>
               ))}
             </div>
+            {actionState.errors?.eligible_roles ? (
+              <p className="text-xs text-destructive">
+                {actionState.errors.eligible_roles[0]}
+              </p>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-2">

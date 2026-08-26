@@ -125,6 +125,7 @@ model Candidate {
   election Election @relation(fields: [election_id], references: [election_id], onDelete: Cascade)
   votes    Vote[]
 
+  @@unique([election_id, candidate_number])
   @@map("candidates")
 }
 
@@ -135,9 +136,9 @@ model Vote {
   candidate_id String
   voted_at     DateTime @default(now())
 
-  election  Election  @relation(fields: [election_id], references: [election_id], onDelete: Cascade)
-  voter     Voter     @relation(fields: [voter_id], references: [voter_id], onDelete: Cascade)
-  candidate Candidate @relation(fields: [candidate_id], references: [candidate_id], onDelete: Cascade)
+  election  Election  @relation(fields: [election_id], references: [election_id], onDelete: Restrict)
+  voter     Voter     @relation(fields: [voter_id], references: [voter_id], onDelete: Restrict)
+  candidate Candidate @relation(fields: [candidate_id], references: [candidate_id], onDelete: Restrict)
 
   @@unique([voter_id, election_id])
   @@index([election_id])

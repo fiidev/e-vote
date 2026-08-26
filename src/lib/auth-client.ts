@@ -5,9 +5,13 @@ export const { signIn, signUp, useSession, signOut } = createAuthClient({
 });
 
 /** Sign-in Google untuk admin (dipakai halaman login). */
-export async function signInWithGoogle(callbackURL = "/admin/dashboard") {
+export async function signInWithGoogle(
+  callbackURL = "/admin/dashboard",
+  errorCallbackURL = "/unauthorized",
+) {
   await signIn.social({
     provider: "google",
     callbackURL,
+    errorCallbackURL,
   });
 }
