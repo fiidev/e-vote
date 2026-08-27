@@ -63,11 +63,5 @@
     "typescript": "^5",
     "vitest": "^4.1.11"
   },
-  "pnpm": {
-    "allowedBuildScripts": [
-      "prisma",
-      "@prisma/engines"
-    ]
-  },
   "packageManager": "pnpm@11.20.0"
 }

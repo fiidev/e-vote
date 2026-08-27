@@ -10,8 +10,8 @@ RUN corepack enable && corepack prepare pnpm@11.20.0 --activate
 FROM base AS deps
 WORKDIR /app
 
-# Copy package manifests
-COPY package.json pnpm-lock.yaml ./
+# Copy package manifests & pnpm configuration
+COPY package.json pnpm-lock.yaml .npmrc* ./
 COPY prisma ./prisma/
 
 # Install all dependencies (including devDependencies for build & types)
