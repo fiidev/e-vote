@@ -15,7 +15,7 @@ COPY package.json pnpm-lock.yaml .npmrc* ./
 COPY prisma ./prisma/
 
 # Install all dependencies (including devDependencies for build & types)
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # ─── Builder Stage ────────────────────────────────────────────
 FROM base AS builder
