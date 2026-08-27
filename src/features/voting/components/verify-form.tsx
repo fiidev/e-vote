@@ -65,7 +65,6 @@ export function VerifyForm() {
           className="absolute left-0 bottom-0 w-96 h-[618px] object-cover opacity-60 pointer-events-none hidden md:block"
         />
 
-        {/* Step Indicator */}
         <div className="absolute top-8 sm:top-10 left-1/2 -translate-x-1/2 flex items-center">
           <span className="flex size-7 items-center justify-center rounded-full bg-ink text-white text-xs font-bold shadow-xs">
             1
@@ -76,7 +75,6 @@ export function VerifyForm() {
           </span>
         </div>
 
-        {/* Form Container */}
         <div className="w-full max-w-[851px] px-6 py-12 flex flex-col items-center gap-8 z-10">
           <div className="flex flex-col items-center gap-3">
             <h1 className="font-heading text-4xl sm:text-6xl font-bold text-cyan-950 tracking-wide text-center">
@@ -99,7 +97,7 @@ export function VerifyForm() {
                 value={tokenInput}
                 onChange={handleInputChange}
                 onPaste={handlePaste}
-                placeholder="CONTOH: MTC-2DQT-G7P2"
+                placeholder="Masukkan Tokennya..."
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck="false"
@@ -107,12 +105,6 @@ export function VerifyForm() {
                 className="w-full h-20 text-center font-mono text-2xl sm:text-3xl font-bold tracking-widest uppercase rounded-2xl border-2 border-cyan-950/30 bg-white text-cyan-950 placeholder:text-cyan-950/25 placeholder:text-lg sm:placeholder:text-2xl focus:border-cyan-950 focus:ring-4 focus:ring-cyan-950/20 outline-none transition-all duration-200 shadow-sm"
                 aria-label="Token Voting"
               />
-              <p className="text-xs text-cyan-950/70 mt-2 font-medium">
-                Format:{" "}
-                <span className="font-mono font-semibold">
-                  [KODE ORG]-[BLOK 1]-[BLOK 2]
-                </span>
-              </p>
             </div>
 
             <Button

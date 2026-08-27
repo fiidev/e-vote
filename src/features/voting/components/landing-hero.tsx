@@ -29,12 +29,12 @@ export function LandingHero() {
 
         <div className="absolute top-[88px] left-1/2 -translate-x-1/2">
           <Image
-            src="/images/image-1-4004-246.png"
-            alt="Logo E-Pilketos"
-            width={128}
-            height={128}
+            src="/images/logo-telkom-schools.png"
+            alt="Logo Telkom Schools"
+            width={160}
+            height={160}
             priority
-            className="size-32 object-cover rounded-full"
+            className="size-16 sm:size-18 object-contain"
           />
         </div>
 
@@ -43,8 +43,8 @@ export function LandingHero() {
             Saatnya Suaramu Jadi Penentu!
           </h1>
           <p className="font-heading text-2xl text-cyan-950 tracking-wide max-w-[564px]">
-            Jangan cuma jadi penonton. Yuk, pilih pemimpin OSIS yang siap
-            wujudkan ide-ide seru kamu di sekolah!
+            Jangan cuma jadi penonton. Yuk, pilih pemimpin organisasi dan
+            suborganisasi sekolah yang siap wujudkan ide-ide seru kamu!
           </p>
           <LinkButton
             href="/verify"
