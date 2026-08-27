@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { formatDate } from "@/lib/utils/format";
+import { formatScheduleRange } from "@/lib/utils/format";
 
 type Election = {
   election_id: string;
@@ -38,8 +38,8 @@ const columns: DataTableColumn<Election>[] = [
     key: "window",
     header: "Jadwal",
     cell: (e) => (
-      <span className="text-sm text-ink-muted">
-        {formatDate(e.start_time)} — {formatDate(e.end_time)}
+      <span className="text-sm text-ink font-medium font-mono text-xs sm:text-sm">
+        {formatScheduleRange(e.start_time, e.end_time)}
       </span>
     ),
   },

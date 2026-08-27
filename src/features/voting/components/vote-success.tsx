@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { LinkButton } from "@/components/ui/button";
+import { VotingStepper } from "@/features/voting/components/voting-stepper";
 
 export function VoteSuccess() {
   const router = useRouter();
@@ -25,7 +26,6 @@ export function VoteSuccess() {
     };
   }, []);
 
-  // Redirect ketika countdown habis
   useEffect(() => {
     if (seconds === 0) {
       router.replace("/");
@@ -36,6 +36,10 @@ export function VoteSuccess() {
     <main className="flex min-h-dvh items-center justify-center bg-stone-100 overflow-hidden">
       <div className="relative w-full max-w-[1400px] h-[800px] rounded-[70px] overflow-hidden mx-6">
         <div className="absolute inset-0 bg-orange-100 rounded-[70px]" />
+
+        <div className="absolute top-8 sm:top-10 left-1/2 -translate-x-1/2 z-10">
+          <VotingStepper currentStep={3} />
+        </div>
 
         <Image
           src="/images/illustration-2-4003-205.png"

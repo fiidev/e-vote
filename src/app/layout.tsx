@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description:
     "Platform voting digital untuk pemilihan ketua OSIS, MPK, dan organisasi sekolah.",
   icons: {
-    icon: "/images/logo.png",
+    icon: "/images/osis.png",
   },
 };
 

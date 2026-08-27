@@ -52,6 +52,7 @@ import {
   updateVoterAction,
 } from "@/features/voters/actions";
 import { useDebounce } from "@/hooks/use-debounce";
+import { VOTER_ROLE_OPTIONS } from "@/lib/constants/roles";
 import { formatDate, formatToken } from "@/lib/utils/format";
 import type { ActionState } from "@/types/admin";
 
@@ -582,11 +583,44 @@ export function VotersClient({
               {actionState.errors._form[0]}
             </p>
           ) : null}
+          {!editing && (
+            <div className="space-y-1.5">
+              <Label htmlFor="election_id">Pemilihan</Label>
+              <Select
+                name="election_id"
+                aria-label="Pilih pemilihan"
+                defaultSelectedKey={electionOptions[0]?.election_id ?? ""}
+                placeholder="Pilih pemilihan"
+                className="w-full"
+              >
+                <SelectTrigger id="election_id" aria-label="Pilih pemilihan">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {electionOptions.map((e) => (
+                    <SelectItem
+                      key={e.election_id}
+                      id={e.election_id}
+                      textValue={e.title}
+                    >
+                      <span className="truncate">{e.title}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {actionState.errors?.election_id ? (
+                <p className="text-xs text-destructive">
+                  {actionState.errors.election_id[0]}
+                </p>
+              ) : null}
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="name">Nama</Label>
             <Input
               id="name"
               name="name"
+              aria-label="Nama pemilih"
               defaultValue={editing?.name ?? undefined}
               placeholder="Nama lengkap"
               aria-invalid={Boolean(actionState.errors?.name)}
@@ -603,6 +637,7 @@ export function VotersClient({
               id="email"
               name="email"
               type="email"
+              aria-label="Email pemilih"
               defaultValue={editing?.email ?? undefined}
               placeholder="nama@email.com"
               aria-invalid={Boolean(actionState.errors?.email)}
@@ -617,18 +652,20 @@ export function VotersClient({
             <Label htmlFor="role">Role</Label>
             <Select
               name="role"
+              aria-label="Pilih role pemilih"
               defaultSelectedKey={editing?.role ?? "SISWA"}
               placeholder="Pilih role"
               className="w-full"
             >
-              <SelectTrigger id="role" aria-label="Pilih role">
+              <SelectTrigger id="role" aria-label="Pilih role pemilih">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem id="SISWA">SISWA</SelectItem>
-                <SelectItem id="OSIS">OSIS</SelectItem>
-                <SelectItem id="MPK">MPK</SelectItem>
-                <SelectItem id="GUKAR">GUKAR</SelectItem>
+                {VOTER_ROLE_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.id} id={opt.id} textValue={opt.label}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             {actionState.errors?.role ? (
@@ -642,6 +679,7 @@ export function VotersClient({
             <Input
               id="generation"
               name="generation"
+              aria-label="Angkatan"
               defaultValue={editing?.generation ?? undefined}
               placeholder="34"
               aria-invalid={Boolean(actionState.errors?.generation)}
@@ -689,6 +727,7 @@ export function VotersClient({
               name="file"
               type="file"
               accept=".xlsx"
+              aria-label="File Excel DPT"
               aria-invalid={Boolean(importState.errors?.file)}
             />
           </div>

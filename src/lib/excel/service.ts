@@ -1,27 +1,12 @@
 import * as XLSX from "xlsx";
 import type { Role } from "@/generated/prisma/enums";
+import { VOTER_ROLE_LABELS } from "@/lib/constants/roles";
 import { formatToken } from "@/lib/utils/format";
-
-/**
- * Excel service — import/export pemilih (kontrak §4.2 FINAL_PLAN).
- * PURE: parsing & building saja, TIDAK menyentuh db (transaksi di actions).
- *
- * Kontrak file import:
- * - Sheet "Pemilih", header row 1 persis: Nama | Email | Role | Angkatan
- * - Role case-insensitive/trim → enum (default SISWA)
- * - Email duplikat dalam file → error baris
- * - Header salah / ada baris contoh → tolak SELURUH file (rollback di action)
- * - Template berisi 1 baris contoh yang ditolak parser
- */
 
 export const IMPORT_SHEET_NAME = "Pemilih";
 export const IMPORT_HEADER = ["Nama", "Email", "Role", "Angkatan"] as const;
 
-export const ROLE_LABELS: Record<Role, string> = {
-  SISWA: "SISWA",
-  GUKAR: "GUKAR",
-  UMUM: "UMUM",
-};
+export const ROLE_LABELS = VOTER_ROLE_LABELS;
 
 function normalizeRole(raw: string): Role | null {
   const value = raw.trim().toUpperCase();
@@ -141,7 +126,7 @@ export function parseVoterImport(
     if (!role) {
       errors.push({
         row: rowNum,
-        message: `Role tidak dikenal: "${roleRaw}". Gunakan SISWA/OSIS/MPK/GUKAR.`,
+        message: `Role tidak dikenal: "${roleRaw}". Gunakan SISWA/GUKAR/UMUM.`,
       });
       continue;
     }
@@ -157,12 +142,10 @@ export function parseVoterImport(
   }
 
   if (errors.length > 0) {
-    return { ok: false, rows, errors }; // action: rollback semua
+    return { ok: false, rows, errors };
   }
   return { ok: true, rows, errors: [] };
 }
-
-// ─── Export helpers ────────────────────────────────────────────────────────
 
 /** Buffer template import (header + 1 baris contoh yang ditolak parser). */
 export function buildVoterTemplateBuffer(): Buffer {

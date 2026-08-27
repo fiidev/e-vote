@@ -1,3 +1,7 @@
+"use client";
+
+import { ArrowUpRight, CheckCircle2 } from "lucide-react";
+
 export interface CandidateCardData {
   candidate_id: string;
   candidate_number: number;
@@ -8,17 +12,19 @@ export interface CandidateCardData {
   mission: string;
 }
 
+interface CandidateCardProps {
+  candidate: CandidateCardData;
+  onShowVision: (candidate: CandidateCardData) => void;
+  onSelect: (candidate: CandidateCardData) => void;
+  isSelected?: boolean;
+}
+
 export function CandidateCard({
   candidate,
   onShowVision,
   onSelect,
   isSelected,
-}: {
-  candidate: CandidateCardData;
-  onShowVision: (candidate: CandidateCardData) => void;
-  onSelect: (candidate: CandidateCardData) => void;
-  isSelected?: boolean;
-}) {
+}: CandidateCardProps) {
   const initials = candidate.name
     .split(" ")
     .map((part) => part[0])
@@ -26,8 +32,10 @@ export function CandidateCard({
     .join("")
     .toUpperCase();
 
+  const formattedNumber = String(candidate.candidate_number).padStart(2, "0");
+
   return (
-    // biome-ignore lint/a11y/useSemanticElements: interactive candidate card containing child modal trigger
+    // biome-ignore lint/a11y/useSemanticElements: interactive candidate card containing modal trigger
     <div
       role="radio"
       aria-checked={Boolean(isSelected)}
@@ -39,49 +47,70 @@ export function CandidateCard({
           onSelect(candidate);
         }
       }}
-      className={`group relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex cursor-pointer text-left transition-all duration-300 ease-out border-4 ${
+      className={`group relative w-72 h-[384px] shrink-0 rounded-3xl overflow-hidden cursor-pointer select-none border-3 transition-colors duration-150 ${
         isSelected
-          ? "border-black shadow-2xl bg-orange-200/80"
-          : "border-transparent hover:border-black hover:shadow-lg"
+          ? "border-cyan-950 ring-2 ring-cyan-950/30 shadow-lg"
+          : "border-transparent hover:border-cyan-950/40 shadow-sm hover:shadow-md"
       }`}
     >
-      <div className="relative w-48 h-64 shrink-0 overflow-hidden">
+      {/* Full Poster Photo */}
+      <div className="absolute inset-0 bg-stone-200">
         {candidate.photo_url ? (
-          // biome-ignore lint/performance/noImgElement: dynamic URL from DB
+          // biome-ignore lint/performance/noImgElement: dynamic user-uploaded URL
           <img
             src={candidate.photo_url}
             alt={`Foto ${candidate.name}`}
-            className="w-48 h-64 rounded-3xl object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-48 h-64 rounded-3xl bg-ink/5 flex items-center justify-center">
-            <span className="font-heading text-5xl font-bold text-ink/40">
-              {initials}
+          <div className="w-full h-full flex flex-col items-center justify-center bg-peach text-cyan-950/40">
+            <span className="font-heading text-6xl font-bold">{initials}</span>
+            <span className="text-xs font-mono font-bold mt-2 text-cyan-950/60">
+              #{formattedNumber}
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex flex-col justify-center pl-14 pr-6 gap-1">
-        <span className="text-xl font-bold text-cyan-950 font-heading tracking-wide">
-          Kandidat {String(candidate.candidate_number).padStart(2, "0")}
-        </span>
-        <h3 className="text-3xl font-bold text-cyan-950 font-heading tracking-wide">
-          {candidate.name}
-        </h3>
-        <p className="text-xl font-normal text-cyan-950 font-heading tracking-wide">
-          {candidate.class_name}
-        </p>
+      {/* Top Overlay Badges */}
+      <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between pointer-events-none z-10">
+        <div className="bg-cyan-950 text-white font-mono text-xs font-bold px-3 py-1 rounded-full shadow-md">
+          #{formattedNumber}
+        </div>
+        {isSelected && (
+          <div className="inline-flex items-center gap-1.5 bg-cyan-950 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md font-heading">
+            <CheckCircle2 className="size-3.5" />
+            Terpilih
+          </div>
+        )}
+      </div>
 
+      {/* Candidate Details Overlay */}
+      <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md rounded-2xl p-3.5 shadow-md border border-black/5 z-10 flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-semibold text-cyan-950/70 font-heading uppercase tracking-wider">
+            Kandidat {formattedNumber}
+          </p>
+          <h3 className="text-lg font-bold text-cyan-950 font-heading tracking-tight truncate">
+            {candidate.name}
+          </h3>
+          <p className="text-xs font-light text-cyan-950/80 font-heading truncate">
+            {candidate.class_name}
+          </p>
+        </div>
+
+        {/* Arrow Button for Vision & Mission */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onShowVision(candidate);
           }}
-          className="mt-4 h-14 w-60 rounded-full border-2 border-black bg-transparent text-black text-xl font-semibold font-heading capitalize tracking-wide transition-all duration-200 ease-out hover:bg-black hover:text-white active:scale-95 cursor-pointer"
+          aria-label={`Lihat visi & misi ${candidate.name}`}
+          title="Lihat Visi & Misi"
+          className="size-9 rounded-full bg-cyan-950/5 hover:bg-cyan-950 hover:text-white text-cyan-950 flex items-center justify-center shrink-0 transition-colors duration-150 cursor-pointer"
         >
-          Lihat Visi &amp; Misi
+          <ArrowUpRight className="size-4.5" />
         </button>
       </div>
     </div>

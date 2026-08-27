@@ -24,6 +24,8 @@ function formatTokenInput(raw: string): string {
   return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
 }
 
+import { VotingStepper } from "@/features/voting/components/voting-stepper";
+
 export function VerifyForm() {
   const [state, formAction, isPending] = useActionState(
     verifyTokenAction,
@@ -50,7 +52,6 @@ export function VerifyForm() {
     setTokenInput(formatted);
   };
 
-  // Token valid jika memiliki minimal format [PREFIX]-[BLOCK1]-[BLOCK2] (13 karakter: 3+1+4+1+4)
   const isTokenFilled = tokenInput.replace(/[^A-Z0-9]/g, "").length >= 7;
 
   return (
@@ -65,14 +66,8 @@ export function VerifyForm() {
           className="absolute left-0 bottom-0 w-96 h-[618px] object-cover opacity-60 pointer-events-none hidden md:block"
         />
 
-        <div className="absolute top-8 sm:top-10 left-1/2 -translate-x-1/2 flex items-center">
-          <span className="flex size-7 items-center justify-center rounded-full bg-ink text-white text-xs font-bold shadow-xs">
-            1
-          </span>
-          <div className="h-1 w-20 sm:w-28 bg-ink" />
-          <span className="flex size-7 items-center justify-center rounded-full bg-cyan-950/20 text-cyan-950 text-xs font-bold">
-            2
-          </span>
+        <div className="absolute top-8 sm:top-10 left-1/2 -translate-x-1/2 z-10">
+          <VotingStepper currentStep={1} />
         </div>
 
         <div className="w-full max-w-[851px] px-6 py-12 flex flex-col items-center gap-8 z-10">
