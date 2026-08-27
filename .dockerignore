@@ -1,10 +1,14 @@
 node_modules
 .next
 .git
+.gitignore
 .env
 .env.local
-data-import
+.env.development
+.env.test
+.env.production
+README.md
 docs
+data-import
 .playwright-mcp
-*.md
-!README.md
+.github
