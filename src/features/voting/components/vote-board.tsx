@@ -83,24 +83,24 @@ export function VoteBoard({
   const isDuel = candidates.length <= 2;
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-stone-100 p-3 sm:p-6 overflow-x-hidden">
-      <div className="relative w-full max-w-[1400px] min-h-[760px] max-h-[95vh] rounded-[40px] sm:rounded-[60px] overflow-hidden bg-orange-100 flex flex-col justify-between p-6 sm:p-10 shadow-sm">
+    <main className="flex min-h-dvh items-center justify-center bg-stone-100 p-2.5 sm:p-6 overflow-x-hidden">
+      <div className="relative w-full max-w-[1400px] min-h-[640px] sm:min-h-[760px] rounded-[32px] sm:rounded-[60px] overflow-hidden bg-orange-100 flex flex-col justify-between p-4 sm:p-8 md:p-10 shadow-sm">
         <Image
           src="/images/illustration-2-4003-205.png"
           alt=""
           width={384}
           height={618}
-          className="absolute left-[-54px] bottom-0 w-80 h-[500px] object-cover opacity-20 pointer-events-none hidden lg:block"
+          className="absolute left-[-24px] sm:left-[-54px] bottom-0 w-44 sm:w-64 lg:w-80 h-auto object-cover opacity-15 sm:opacity-20 pointer-events-none select-none z-0"
         />
 
         <div className="flex flex-col items-center gap-3 z-10">
           <VotingStepper currentStep={2} />
 
-          <div className="text-center max-w-2xl px-4">
-            <h1 className="font-heading text-3xl sm:text-5xl font-bold text-cyan-950 tracking-tight">
+          <div className="text-center max-w-2xl px-2 sm:px-4">
+            <h1 className="font-heading text-2xl sm:text-4xl md:text-5xl font-bold text-cyan-950 tracking-tight">
               Pilih Kandidat
             </h1>
-            <p className="font-heading text-sm sm:text-lg font-light text-cyan-950/80 tracking-wide mt-1">
+            <p className="font-heading text-xs sm:text-base md:text-lg font-light text-cyan-950/80 tracking-wide mt-1">
               {organizationName
                 ? `${electionTitle ?? "Pemilihan"} — ${organizationName} (${candidates.length} Calon)`
                 : "Pilih salah satu kandidat di bawah untuk memberikan suara."}
@@ -121,9 +121,9 @@ export function VoteBoard({
           />
         </form>
 
-        <div className="flex-1 w-full my-4 z-10 flex flex-col items-center justify-center">
+        <div className="flex-1 w-full my-3 sm:my-4 z-10 flex flex-col items-center justify-center">
           {isDuel ? (
-            <div className="flex flex-wrap items-center justify-center gap-8 w-full max-w-4xl py-2">
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 w-full max-w-4xl py-2">
               {candidates.map((candidate) => (
                 <CandidateCard
                   key={candidate.candidate_id}
@@ -135,7 +135,7 @@ export function VoteBoard({
               ))}
             </div>
           ) : (
-            <div className="w-full max-w-5xl px-8 sm:px-14 relative flex flex-col items-center">
+            <div className="w-full max-w-5xl px-2 sm:px-14 relative flex flex-col items-center">
               <Carousel
                 setApi={setApi}
                 opts={{
@@ -144,11 +144,11 @@ export function VoteBoard({
                 }}
                 className="w-full py-2"
               >
-                <CarouselContent className="-ml-4 sm:-ml-6">
+                <CarouselContent className="-ml-3 sm:-ml-6">
                   {candidates.map((candidate) => (
                     <CarouselItem
                       key={candidate.candidate_id}
-                      className="pl-4 sm:pl-6 basis-auto flex justify-center"
+                      className="pl-3 sm:pl-6 basis-auto flex justify-center"
                     >
                       <CandidateCard
                         candidate={candidate}
@@ -161,8 +161,8 @@ export function VoteBoard({
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <CarouselPrevious className="size-11 -left-5 sm:-left-8 bg-white/90 hover:bg-cyan-950 hover:text-white border border-cyan-950/15 shadow-md" />
-                <CarouselNext className="size-11 -right-5 sm:-right-8 bg-white/90 hover:bg-cyan-950 hover:text-white border border-cyan-950/15 shadow-md" />
+                <CarouselPrevious className="size-9 sm:size-11 left-0 sm:-left-8 bg-white/90 hover:bg-cyan-950 hover:text-white border border-cyan-950/15 shadow-md" />
+                <CarouselNext className="size-9 sm:size-11 right-0 sm:-right-8 bg-white/90 hover:bg-cyan-950 hover:text-white border border-cyan-950/15 shadow-md" />
               </Carousel>
 
               {count > 1 && (

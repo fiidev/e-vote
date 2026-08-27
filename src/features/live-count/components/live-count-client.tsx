@@ -306,18 +306,18 @@ export function LiveCountClient({
               {sortedCandidates.map((item, index) => (
                 <div
                   key={item.candidate_id}
-                  className="flex items-center gap-4 sm:gap-5 py-1"
+                  className="flex items-center gap-3 sm:gap-5 py-1.5"
                 >
-                  <span className="w-7 text-center text-base font-semibold text-muted-foreground font-mono">
+                  <span className="w-5 sm:w-7 text-center text-sm sm:text-base font-semibold text-muted-foreground font-mono">
                     {index + 1}
                   </span>
-                  <Avatar className="size-12 rounded-xl">
+                  <Avatar className="size-10 sm:size-12 rounded-xl">
                     <AvatarImage
                       src={item.photo_url}
                       alt={item.name}
                       className="object-cover"
                     />
-                    <AvatarFallback className="font-bold text-sm">
+                    <AvatarFallback className="font-bold text-xs sm:text-sm">
                       {item.name
                         .split(" ")
                         .map((n) => n[0])
@@ -326,16 +326,16 @@ export function LiveCountClient({
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold text-foreground">
+                    <p className="truncate text-sm sm:text-base font-semibold text-foreground">
                       #{item.candidate_number} {item.name}
                     </p>
                     {item.class_name && (
-                      <p className="truncate text-sm text-muted-foreground mt-0.5">
+                      <p className="truncate text-xs sm:text-sm text-muted-foreground mt-0.5">
                         {item.class_name} • {item.votes} suara
                       </p>
                     )}
                   </div>
-                  <span className="text-lg font-bold font-heading text-primary">
+                  <span className="text-base sm:text-lg font-bold font-heading text-primary shrink-0">
                     {item.percentage}%
                   </span>
                 </div>

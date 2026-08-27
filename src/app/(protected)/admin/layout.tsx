@@ -36,7 +36,7 @@ export default async function AdminLayout({
             Panel Admin
           </span>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-3 sm:p-6 overflow-x-hidden">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

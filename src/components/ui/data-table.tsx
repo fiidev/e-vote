@@ -33,7 +33,7 @@ export function DataTable<T>({
               <th
                 key={col.key}
                 className={cn(
-                  "h-10 px-2 text-left font-medium whitespace-nowrap text-ink-muted",
+                  "h-11 px-3.5 py-2.5 sm:px-4 text-left font-medium whitespace-nowrap text-ink-muted",
                   col.headClassName,
                 )}
               >
@@ -47,7 +47,7 @@ export function DataTable<T>({
             <tr>
               <td
                 colSpan={columns.length}
-                className="h-24 text-center text-ink-muted"
+                className="h-28 text-center text-ink-muted"
               >
                 {empty ?? "Belum ada data."}
               </td>
@@ -61,7 +61,10 @@ export function DataTable<T>({
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={cn("p-2 align-middle text-ink", col.className)}
+                    className={cn(
+                      "p-3.5 sm:p-4 align-middle text-ink",
+                      col.className,
+                    )}
                   >
                     {col.cell(row)}
                   </td>
