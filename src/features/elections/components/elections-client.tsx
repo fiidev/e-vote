@@ -34,7 +34,8 @@ import {
   sendTokensEmailAction,
   updateElectionAction,
 } from "@/features/elections/actions";
-import { formatDate } from "@/lib/utils/format";
+import { VOTER_ROLE_OPTIONS } from "@/lib/constants/roles";
+import { formatScheduleRange } from "@/lib/utils/format";
 import type { ActionState } from "@/types/action-state";
 
 export interface ElectionRow {
@@ -49,8 +50,6 @@ export interface ElectionRow {
   role_weights: unknown;
   _count: { candidates: number; votes: number; tokens: number };
 }
-
-const ROLE_OPTIONS = ["SISWA", "OSIS", "MPK", "GUKAR"] as const;
 
 interface ElectionsClientProps {
   elections: ElectionRow[];
@@ -223,10 +222,9 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
             key: "window",
             header: "Jadwal",
             cell: (e) => (
-              <div className="text-sm text-ink-muted">
-                <p>{formatDate(e.start_time)}</p>
-                <p>— {formatDate(e.end_time)}</p>
-              </div>
+              <span className="text-sm text-ink font-medium font-mono text-xs sm:text-sm">
+                {formatScheduleRange(e.start_time, e.end_time)}
+              </span>
             ),
           },
           {
@@ -508,20 +506,21 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
           <div className="space-y-1.5">
             <Label>Role yang Berhak Memilih</Label>
             <div className="flex flex-wrap gap-2">
-              {ROLE_OPTIONS.map((role) => (
+              {VOTER_ROLE_OPTIONS.map((role) => (
                 <span
-                  key={role}
+                  key={role.id}
                   className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-sm text-ink transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                 >
                   <Checkbox
                     name="eligible_roles"
-                    value={role}
+                    value={role.id}
                     defaultSelected={
-                      editing?.eligible_roles.includes(role) ?? role === "SISWA"
+                      editing?.eligible_roles.includes(role.id) ??
+                      role.id === "SISWA"
                     }
-                    aria-label={`Role ${role}`}
+                    aria-label={`Role ${role.label}`}
                   />
-                  {role}
+                  {role.label}
                 </span>
               ))}
             </div>
@@ -556,24 +555,24 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                   {actionState.errors.role_weights[0]}
                 </p>
               ) : null}
-              <div className="grid grid-cols-2 gap-3">
-                {ROLE_OPTIONS.map((role) => (
-                  <div key={role} className="space-y-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {VOTER_ROLE_OPTIONS.map((role) => (
+                  <div key={role.id} className="space-y-1">
                     <Label
-                      htmlFor={`weight_${role}`}
+                      htmlFor={`weight_${role.id}`}
                       className="text-xs text-ink-muted"
                     >
-                      {role}
+                      {role.label}
                     </Label>
                     <Input
-                      id={`weight_${role}`}
+                      id={`weight_${role.id}`}
                       type="number"
                       min={0}
                       max={100}
                       placeholder="0"
-                      value={roleWeights[role] ?? ""}
-                      onChange={(e) => updateWeight(role, e.target.value)}
-                      data-role-weight={role}
+                      value={roleWeights[role.id] ?? ""}
+                      onChange={(e) => updateWeight(role.id, e.target.value)}
+                      data-role-weight={role.id}
                     />
                   </div>
                 ))}

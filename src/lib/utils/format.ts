@@ -21,3 +21,22 @@ export function formatDate(date: Date): string {
     timeStyle: "short",
   }).format(date);
 }
+
+/** Format rentang jadwal ringkas: e.g. "27 Agu 09:07 → 03 Sep 10:07" */
+export function formatScheduleRange(
+  startDate: Date | string,
+  endDate: Date | string,
+): string {
+  const start = typeof startDate === "string" ? new Date(startDate) : startDate;
+  const end = typeof endDate === "string" ? new Date(endDate) : endDate;
+
+  const formatPart = (d: Date) => {
+    const day = d.getDate();
+    const month = d.toLocaleDateString("id-ID", { month: "short" });
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${day} ${month} ${hours}:${minutes}`;
+  };
+
+  return `${formatPart(start)} → ${formatPart(end)}`;
+}

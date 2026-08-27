@@ -6,6 +6,14 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
+  Carousel,
+  type CarouselApi,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import {
   Dialog,
   DialogDescription,
   DialogFooter,
@@ -17,6 +25,7 @@ import {
   CandidateCard,
   type CandidateCardData,
 } from "@/features/voting/components/candidate-card";
+import { VotingStepper } from "@/features/voting/components/voting-stepper";
 import { voteErrorMessage } from "@/features/voting/error-messages";
 
 export function VoteBoard({
@@ -39,9 +48,22 @@ export function VoteBoard({
   const [visionCandidate, setVisionCandidate] =
     useState<CandidateCardData | null>(null);
 
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    setCount(api.scrollSnapList().length);
+    setCurrent(api.selectedScrollSnap() + 1);
+
+    api.on("select", () => {
+      setCurrent(api.selectedScrollSnap() + 1);
+    });
+  }, [api]);
+
   useEffect(() => {
     if (state?.error) {
-      // Session expired → redirect otomatis ke verify
       if (state.error === "NO_VOTE_SESSION") {
         toast.error(voteErrorMessage(state.error), { id: "vote-error" });
         router.replace("/verify");
@@ -58,55 +80,32 @@ export function VoteBoard({
     }
   };
 
-  return (
-    <main className="flex min-h-dvh items-center justify-center bg-stone-100 overflow-hidden">
-      <div className="relative w-full max-w-[1400px] h-[800px] rounded-[70px] overflow-hidden mx-6">
-        <div className="absolute inset-0 bg-orange-100 rounded-[70px]" />
+  const isDuel = candidates.length <= 2;
 
+  return (
+    <main className="flex min-h-dvh items-center justify-center bg-stone-100 p-3 sm:p-6 overflow-x-hidden">
+      <div className="relative w-full max-w-[1400px] min-h-[760px] max-h-[95vh] rounded-[40px] sm:rounded-[60px] overflow-hidden bg-orange-100 flex flex-col justify-between p-6 sm:p-10 shadow-sm">
         <Image
           src="/images/illustration-2-4003-205.png"
           alt=""
           width={384}
           height={618}
-          className="absolute left-[-54px] top-[402px] w-96 h-[618px] object-cover opacity-60"
+          className="absolute left-[-54px] bottom-0 w-80 h-[500px] object-cover opacity-20 pointer-events-none hidden lg:block"
         />
 
-        <div className="absolute top-[134px] left-1/2 -translate-x-1/2 flex items-center">
-          <span className="flex size-7 items-center justify-center rounded-full bg-ink text-white text-xs font-bold">
-            <svg
-              viewBox="0 0 24 24"
-              className="size-4"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              role="img"
-              aria-label="Selesai"
-            >
-              <title>Selesai</title>
-              <path d="M5 13l4 4L19 7" />
-            </svg>
-          </span>
-          <div className="h-1 w-28 bg-ink" />
-          <span className="flex size-7 items-center justify-center rounded-full bg-ink text-white text-xs font-bold">
-            2
-          </span>
-          <div className="h-1 w-28 bg-muted" />
-          <span className="flex size-7 items-center justify-center rounded-full bg-muted text-ink-muted text-xs font-bold">
-            3
-          </span>
-        </div>
+        <div className="flex flex-col items-center gap-3 z-10">
+          <VotingStepper currentStep={2} />
 
-        <div className="absolute left-1/2 top-[219px] -translate-x-1/2 w-[851px] text-center">
-          <h1 className="font-heading text-6xl font-bold text-cyan-950 tracking-wide">
-            Pilih Kandidat
-          </h1>
-          <p className="font-heading text-xl font-light text-cyan-950 tracking-wide mt-2">
-            {organizationName
-              ? `${electionTitle ?? "Pemilihan"} — ${organizationName}`
-              : "Kenali dulu kandidatnya sebelum vote.."}
-          </p>
+          <div className="text-center max-w-2xl px-4">
+            <h1 className="font-heading text-3xl sm:text-5xl font-bold text-cyan-950 tracking-tight">
+              Pilih Kandidat
+            </h1>
+            <p className="font-heading text-sm sm:text-lg font-light text-cyan-950/80 tracking-wide mt-1">
+              {organizationName
+                ? `${electionTitle ?? "Pemilihan"} — ${organizationName} (${candidates.length} Calon)`
+                : "Pilih salah satu kandidat di bawah untuk memberikan suara."}
+            </p>
+          </div>
         </div>
 
         <form
@@ -122,46 +121,109 @@ export function VoteBoard({
           />
         </form>
 
-        <div className="absolute left-[167px] top-[382px] w-[1066px] flex gap-[42px]">
-          {candidates.map((candidate) => (
-            <CandidateCard
-              key={candidate.candidate_id}
-              candidate={candidate}
-              onShowVision={setVisionCandidate}
-              onSelect={setSelected}
-              isSelected={selected?.candidate_id === candidate.candidate_id}
-            />
-          ))}
+        <div className="flex-1 w-full my-4 z-10 flex flex-col items-center justify-center">
+          {isDuel ? (
+            <div className="flex flex-wrap items-center justify-center gap-8 w-full max-w-4xl py-2">
+              {candidates.map((candidate) => (
+                <CandidateCard
+                  key={candidate.candidate_id}
+                  candidate={candidate}
+                  onShowVision={setVisionCandidate}
+                  onSelect={setSelected}
+                  isSelected={selected?.candidate_id === candidate.candidate_id}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="w-full max-w-5xl px-8 sm:px-14 relative flex flex-col items-center">
+              <Carousel
+                setApi={setApi}
+                opts={{
+                  align: "start",
+                  dragFree: false,
+                }}
+                className="w-full py-2"
+              >
+                <CarouselContent className="-ml-4 sm:-ml-6">
+                  {candidates.map((candidate) => (
+                    <CarouselItem
+                      key={candidate.candidate_id}
+                      className="pl-4 sm:pl-6 basis-auto flex justify-center"
+                    >
+                      <CandidateCard
+                        candidate={candidate}
+                        onShowVision={setVisionCandidate}
+                        onSelect={setSelected}
+                        isSelected={
+                          selected?.candidate_id === candidate.candidate_id
+                        }
+                      />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious className="size-11 -left-5 sm:-left-8 bg-white/90 hover:bg-cyan-950 hover:text-white border border-cyan-950/15 shadow-md" />
+                <CarouselNext className="size-11 -right-5 sm:-right-8 bg-white/90 hover:bg-cyan-950 hover:text-white border border-cyan-950/15 shadow-md" />
+              </Carousel>
+
+              {count > 1 && (
+                <div className="flex items-center gap-1.5 mt-3">
+                  {Array.from({ length: count }, (_, idx) => `dot-${idx}`).map(
+                    (dotId, idx) => (
+                      <button
+                        key={dotId}
+                        type="button"
+                        onClick={() => api?.scrollTo(idx)}
+                        aria-label={`Slide ${idx + 1}`}
+                        className={`h-2 rounded-full transition-all duration-300 ${
+                          current === idx + 1
+                            ? "w-6 bg-cyan-950 shadow-xs"
+                            : "w-2 bg-cyan-950/20 hover:bg-cyan-950/40"
+                        }`}
+                      />
+                    ),
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <button
-          type="button"
-          onClick={() => setConfirmOpen(true)}
-          disabled={!selected || isPending}
-          className="absolute right-[49px] bottom-[45px] h-14 w-32 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 ease-out active:scale-95 hover:shadow-lg cursor-pointer"
-        >
-          {isPending ? "Mengirim…" : "Kirim"}
-        </button>
+        <div className="w-full flex justify-end items-center z-10 pt-2">
+          <Button
+            type="button"
+            onPress={() => setConfirmOpen(true)}
+            isDisabled={!selected || isPending}
+            className="w-full sm:w-auto h-12 px-8 rounded-full bg-cyan-950 text-white font-heading text-lg font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 transition-colors duration-150 cursor-pointer shadow-md"
+          >
+            {isPending ? "Mengirim…" : "Kirim Pilihan ➔"}
+          </Button>
+        </div>
 
         <Dialog
           isOpen={confirmOpen && selected !== null}
           onOpenChange={setConfirmOpen}
         >
           <DialogHeader>
-            <DialogTitle>Konfirmasi Pilihan</DialogTitle>
+            <DialogTitle>Konfirmasi Pilihan Suara</DialogTitle>
             <DialogDescription>
-              Kamu memilih{" "}
-              <span className="font-semibold text-ink">{selected?.name}</span> —
-              nomor urut {selected?.candidate_number}. Pilihan tidak bisa diubah
-              setelah dikirim.
+              Apakah Anda yakin ingin memilih{" "}
+              <span className="font-bold text-ink">
+                #{selected?.candidate_number} {selected?.name}
+              </span>
+              ? Pilihan bersifat rahasia dan tidak dapat diubah setelah
+              dikirimkan.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onPress={() => setConfirmOpen(false)}>
+            <Button
+              variant="outline"
+              onPress={() => setConfirmOpen(false)}
+              isDisabled={isPending}
+            >
               Batal
             </Button>
             <Button onPress={confirm} isDisabled={isPending}>
-              {isPending ? "Mengirim…" : "Ya, Kirim"}
+              {isPending ? "Mengirim Suara…" : "Ya, Kirim Suara"}
             </Button>
           </DialogFooter>
         </Dialog>
@@ -171,16 +233,25 @@ export function VoteBoard({
           onOpenChange={(open) => !open && setVisionCandidate(null)}
         >
           <DialogHeader>
-            <DialogTitle>Visi &amp; Misi — {visionCandidate?.name}</DialogTitle>
+            <DialogTitle>
+              Visi &amp; Misi — #{visionCandidate?.candidate_number}{" "}
+              {visionCandidate?.name}
+            </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-4 text-sm text-ink">
-            <section className="flex flex-col gap-1">
-              <h3 className="font-semibold text-ink">Visi</h3>
-              <p className="text-ink-muted">{visionCandidate?.vision}</p>
+          <div className="flex flex-col gap-4 text-sm text-ink max-h-[60vh] overflow-y-auto pr-1">
+            <section className="bg-stone-50 p-4 rounded-xl border border-line">
+              <h3 className="font-bold text-ink text-xs uppercase tracking-wider text-cyan-950 mb-1">
+                Visi
+              </h3>
+              <p className="text-ink-muted leading-relaxed">
+                {visionCandidate?.vision}
+              </p>
             </section>
-            <section className="flex flex-col gap-1">
-              <h3 className="font-semibold text-ink">Misi</h3>
-              <p className="whitespace-pre-line text-ink-muted">
+            <section className="bg-stone-50 p-4 rounded-xl border border-line">
+              <h3 className="font-bold text-ink text-xs uppercase tracking-wider text-cyan-950 mb-1">
+                Misi
+              </h3>
+              <p className="whitespace-pre-line text-ink-muted leading-relaxed">
                 {visionCandidate?.mission}
               </p>
             </section>

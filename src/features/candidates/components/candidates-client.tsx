@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ImageIcon, Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import {
   useActionState,
   useEffect,
@@ -37,6 +37,10 @@ import {
   deleteCandidateAction,
   updateCandidateAction,
 } from "@/features/candidates/actions";
+import {
+  ALLOWED_IMAGE_EXTENSIONS,
+  MAX_IMAGE_FILE_SIZE_MB,
+} from "@/lib/constants/upload";
 import type { ActionState } from "@/types/action-state";
 
 export interface CandidateRow {
@@ -72,6 +76,8 @@ export function CandidatesClient({
   const [selectedElectionId, setSelectedElectionId] = useState<string>(
     elections[0]?.election_id ?? "",
   );
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function candidateFormAction(
     prevState: ActionState,
@@ -88,15 +94,12 @@ export function CandidatesClient({
     return createCandidateAction(prevState, formData);
   }
 
-  // Reset dialog form key setiap kali dialog open/close atau editing berubah,
-  // agar useActionState tidak leak error dari form sebelumnya.
   const [dialogKey, setDialogKey] = useState(0);
   const [actionState, formAction, isPending] = useActionState(
     candidateFormAction,
     initialActionState,
   );
 
-  // Toast feedback setelah form submit selesai
   const prevPending = useRef(isPending);
   useEffect(() => {
     if (prevPending.current && !isPending) {
@@ -112,6 +115,7 @@ export function CandidatesClient({
 
   function openCreate() {
     setEditing(null);
+    setPreviewUrl(null);
     setSelectedElectionId(elections[0]?.election_id ?? "");
     setDialogKey((k) => k + 1);
     setDialogOpen(true);
@@ -119,6 +123,7 @@ export function CandidatesClient({
 
   function openEdit(candidate: CandidateRow) {
     setEditing(candidate);
+    setPreviewUrl(candidate.photo_url);
     setSelectedElectionId(candidate.election_id);
     setDialogKey((k) => k + 1);
     setDialogOpen(true);
@@ -352,7 +357,19 @@ export function CandidatesClient({
               name="candidate_number"
               type="number"
               min={1}
-              defaultValue={editing?.candidate_number ?? undefined}
+              defaultValue={
+                editing
+                  ? editing.candidate_number
+                  : candidates.filter(
+                        (c) => c.election_id === selectedElectionId,
+                      ).length > 0
+                    ? Math.max(
+                        ...candidates
+                          .filter((c) => c.election_id === selectedElectionId)
+                          .map((c) => c.candidate_number),
+                      ) + 1
+                    : 1
+              }
               placeholder="1"
               aria-invalid={Boolean(actionState.errors?.candidate_number)}
             />
@@ -396,14 +413,74 @@ export function CandidatesClient({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="photo_url">URL Foto (opsional)</Label>
-            <Input
-              id="photo_url"
-              name="photo_url"
-              defaultValue={editing?.photo_url ?? undefined}
-              placeholder="https://…"
-              aria-invalid={Boolean(actionState.errors?.photo_url)}
-            />
+            <Label htmlFor="photo_file">Foto Kandidat (opsional)</Label>
+            <div className="flex items-center gap-4 p-3 rounded-xl border border-line bg-surface/50">
+              <div className="relative size-16 rounded-xl overflow-hidden bg-muted flex items-center justify-center shrink-0 border border-line">
+                {previewUrl ? (
+                  // biome-ignore lint/performance/noImgElement: user upload preview
+                  <img
+                    src={previewUrl}
+                    alt="Preview foto kandidat"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <ImageIcon className="size-6 text-muted-foreground opacity-50" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <input
+                  ref={fileInputRef}
+                  id="photo_file"
+                  name="photo_file"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPreviewUrl(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+                <input
+                  type="hidden"
+                  name="photo_url"
+                  value={previewUrl ?? ""}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onPress={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="size-3.5" aria-hidden />
+                    {previewUrl ? "Ganti Foto" : "Unggah Foto"}
+                  </Button>
+                  {previewUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onPress={() => {
+                        setPreviewUrl(null);
+                        if (fileInputRef.current)
+                          fileInputRef.current.value = "";
+                      }}
+                    >
+                      <Trash2 className="size-3.5" aria-hidden />
+                      Hapus
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Format {ALLOWED_IMAGE_EXTENSIONS} (Maks{" "}
+                  {MAX_IMAGE_FILE_SIZE_MB}MB). Foto disimpan langsung ke
+                  Cloudinary.
+                </p>
+              </div>
+            </div>
             {actionState.errors?.photo_url ? (
               <p className="text-xs text-destructive">
                 {actionState.errors.photo_url[0]}

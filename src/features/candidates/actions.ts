@@ -13,6 +13,7 @@ import {
   updateCandidate,
 } from "@/features/candidates/service";
 import { getAuthUser } from "@/lib/auth";
+import { uploadImageToCloudinary } from "@/lib/cloudinary";
 import type { ActionState } from "@/types/action-state";
 
 async function requireAuth() {
@@ -75,6 +76,24 @@ export async function createCandidateAction(
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireAuth();
+
+  const photoFile = formData.get("photo_file");
+  if (photoFile instanceof File && photoFile.size > 0) {
+    try {
+      const uploadedUrl = await uploadImageToCloudinary(photoFile);
+      formData.set("photo_url", uploadedUrl);
+    } catch {
+      return {
+        ok: false,
+        errors: {
+          photo_url: [
+            "Gagal mengunggah foto ke Cloudinary. Silakan coba lagi.",
+          ],
+        },
+      };
+    }
+  }
+
   const result = parseForm(candidateCreateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 
@@ -114,6 +133,24 @@ export async function updateCandidateAction(
   formData: FormData,
 ): Promise<ActionState> {
   const user = await requireAuth();
+
+  const photoFile = formData.get("photo_file");
+  if (photoFile instanceof File && photoFile.size > 0) {
+    try {
+      const uploadedUrl = await uploadImageToCloudinary(photoFile);
+      formData.set("photo_url", uploadedUrl);
+    } catch {
+      return {
+        ok: false,
+        errors: {
+          photo_url: [
+            "Gagal mengunggah foto ke Cloudinary. Silakan coba lagi.",
+          ],
+        },
+      };
+    }
+  }
+
   const result = parseForm(candidateUpdateSchema, formData);
   if (!result.ok) return { ok: false, errors: result.errors };
 

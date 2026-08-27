@@ -1,7 +1,15 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   Select,
   SelectContent,
@@ -9,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/cn";
 
 interface CandidateLive {
   candidate_id: string;
@@ -30,9 +39,14 @@ interface LiveData {
 interface Props {
   elections: Array<{ election_id: string; title: string }>;
   defaultElectionId?: string;
+  className?: string;
 }
 
-export function LiveCountClient({ elections, defaultElectionId }: Props) {
+export function LiveCountClient({
+  elections,
+  defaultElectionId,
+  className,
+}: Props) {
   const [selectedId, setSelectedId] = useState(defaultElectionId ?? "");
   const [data, setData] = useState<LiveData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -80,41 +94,74 @@ export function LiveCountClient({ elections, defaultElectionId }: Props) {
     };
   }, [selectedId]);
 
-  if (error === "NO_ELECTION") {
+  if (error === "NO_ELECTION" || elections.length === 0) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-surface">
-        <p className="text-ink-muted text-lg">Belum ada pemilihan aktif.</p>
-      </main>
+      <div className="space-y-6">
+        <div>
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+            Live Count
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Siaran langsung perolehan suara pemilihan secara real-time.
+          </p>
+        </div>
+        <EmptyState
+          title="Belum ada pemilihan aktif"
+          description="Silakan aktifkan sesi pemilihan terlebih dahulu di menu Pemilihan."
+        />
+      </div>
     );
   }
 
   if (!data) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-surface">
-        <p className="text-ink-muted text-lg">Menghubungkan...</p>
-      </main>
+      <div className="space-y-6">
+        <div>
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+            Live Count
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Siaran langsung perolehan suara pemilihan secara real-time.
+          </p>
+        </div>
+        <div className="flex items-center justify-center p-12 text-sm text-muted-foreground gap-2">
+          <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          Menghubungkan ke siaran langsung suara (SSE)...
+        </div>
+      </div>
     );
   }
 
-  const [left, right] = data.candidates;
+  const candidateCount = data.candidates.length;
+  const isDuelMode = candidateCount === 2;
+  const sortedCandidates = [...data.candidates].sort(
+    (a, b) => b.votes - a.votes,
+  );
 
   return (
-    <main className="min-h-dvh flex items-center justify-center bg-stone-100 overflow-hidden">
-      <div className="relative w-full max-w-[1400px] h-[800px] rounded-[70px] overflow-hidden mx-6">
-        <div className="absolute inset-0 bg-orange-100 rounded-[70px]" />
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground">
+              Live Count
+            </h1>
+          </div>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Siaran langsung perolehan suara diperbarui otomatis setiap kali
+            pemilih menyelesaikan voting.
+          </p>
+        </div>
 
-        {/* Election selector — hanya tampil jika >1 election */}
         {elections.length > 1 && (
-          <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10">
+          <div className="flex items-center gap-2">
             <Select
               selectedKey={selectedId}
               onSelectionChange={(key) => setSelectedId(String(key))}
               aria-label="Pilih pemilihan"
             >
-              <SelectTrigger
-                className="w-72 bg-white/80 backdrop-blur"
-                aria-label="Pilih pemilihan untuk live count"
-              >
+              <SelectTrigger className="w-64 bg-background text-xs font-medium">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -131,118 +178,172 @@ export function LiveCountClient({ elections, defaultElectionId }: Props) {
             </Select>
           </div>
         )}
-
-        {/* Title */}
-        <div className="absolute left-1/2 top-[119px] -translate-x-1/2 w-[851px] text-center">
-          <h1 className="font-heading text-6xl font-bold text-cyan-950 tracking-wide">
-            Live Count
-          </h1>
-          <p className="font-heading text-xl font-light text-cyan-950 tracking-wide mt-2">
-            {data.electionTitle}
-          </p>
-        </div>
-
-        {/* Candidate Cards */}
-        <div className="absolute left-[167px] top-[300px] w-[1066px] flex gap-[42px]">
-          {left && (
-            <div className="relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex">
-              {left.photo_url ? (
-                <Image
-                  src={left.photo_url}
-                  alt={left.name}
-                  width={192}
-                  height={256}
-                  className="w-48 h-64 rounded-3xl object-cover"
-                />
-              ) : (
-                <div className="w-48 h-64 rounded-3xl bg-ink/5 flex items-center justify-center shrink-0">
-                  <span className="font-heading text-5xl font-bold text-ink/40">
-                    {left.name
-                      .split(" ")
-                      .map((p) => p[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div className="flex flex-col justify-center pl-14 pr-6 w-full">
-                <span className="text-xl font-bold text-cyan-950 font-heading tracking-wide">
-                  Kandidat {String(left.candidate_number).padStart(2, "0")}
-                </span>
-                <h3 className="text-3xl font-bold text-cyan-950 font-heading tracking-wide">
-                  {left.name}
-                </h3>
-                <p className="text-xl text-cyan-950 font-heading tracking-wide">
-                  {left.class_name}
-                </p>
-                <p className="text-3xl font-bold text-cyan-950 font-heading tracking-wide mt-4">
-                  {left.percentage}%
-                </p>
-              </div>
-            </div>
-          )}
-
-          {right && (
-            <div className="relative w-[512px] h-64 bg-peach rounded-3xl overflow-hidden flex flex-row-reverse">
-              {right.photo_url ? (
-                <Image
-                  src={right.photo_url}
-                  alt={right.name}
-                  width={192}
-                  height={256}
-                  className="w-48 h-64 rounded-3xl object-cover"
-                />
-              ) : (
-                <div className="w-48 h-64 rounded-3xl bg-ink/5 flex items-center justify-center shrink-0">
-                  <span className="font-heading text-5xl font-bold text-ink/40">
-                    {right.name
-                      .split(" ")
-                      .map((p) => p[0])
-                      .slice(0, 2)
-                      .join("")
-                      .toUpperCase()}
-                  </span>
-                </div>
-              )}
-              <div className="flex flex-col justify-center items-end pr-14 pl-6 w-full text-right">
-                <span className="text-xl font-bold text-cyan-950 font-heading tracking-wide">
-                  Kandidat {String(right.candidate_number).padStart(2, "0")}
-                </span>
-                <h3 className="text-3xl font-bold text-cyan-950 font-heading tracking-wide">
-                  {right.name}
-                </h3>
-                <p className="text-xl text-cyan-950 font-heading tracking-wide">
-                  {right.class_name}
-                </p>
-                <p className="text-3xl font-bold text-cyan-950 font-heading tracking-wide mt-4">
-                  {right.percentage}%
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Progress Bar */}
-        <div className="absolute left-[182px] top-[606px] w-[1024px] h-9 rounded-[64px] overflow-hidden bg-muted flex">
-          {left && (
-            <div
-              className="h-full bg-cyan-950 rounded-[64px] transition-all duration-700 ease-out"
-              style={{ width: `${left.percentage}%` }}
-            />
-          )}
-          {right && (
-            <div
-              className="h-full bg-amber-500 rounded-[64px] transition-all duration-700 ease-out"
-              style={{ width: `${right.percentage}%` }}
-            />
-          )}
-        </div>
-
-        <p className="absolute left-1/2 bottom-[40px] -translate-x-1/2 text-ink-muted text-sm">
-          Total suara masuk: {data.totalVotes}
-        </p>
       </div>
-    </main>
+
+      {isDuelMode ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Candidate 1 (Left) */}
+            {data.candidates[0] && (
+              <Card className="overflow-hidden border border-border p-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative size-16 shrink-0 rounded-xl overflow-hidden bg-muted">
+                    {data.candidates[0].photo_url ? (
+                      // biome-ignore lint/performance/noImgElement: dynamic user image
+                      <img
+                        src={data.candidates[0].photo_url}
+                        alt={data.candidates[0].name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-bold text-muted-foreground text-sm">
+                        #{data.candidates[0].candidate_number}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
+                      Kandidat{" "}
+                      {String(data.candidates[0].candidate_number).padStart(
+                        2,
+                        "0",
+                      )}
+                    </p>
+                    <h3 className="font-heading text-base font-bold text-foreground truncate">
+                      {data.candidates[0].name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {data.candidates[0].class_name}
+                    </p>
+                    <p className="text-lg font-bold text-primary mt-1">
+                      {data.candidates[0].percentage}%{" "}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        ({data.candidates[0].votes} suara)
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Candidate 2 (Right) */}
+            {data.candidates[1] && (
+              <Card className="overflow-hidden border border-border p-4">
+                <div className="flex items-center gap-4">
+                  <div className="relative size-16 shrink-0 rounded-xl overflow-hidden bg-muted">
+                    {data.candidates[1].photo_url ? (
+                      // biome-ignore lint/performance/noImgElement: dynamic user image
+                      <img
+                        src={data.candidates[1].photo_url}
+                        alt={data.candidates[1].name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-bold text-muted-foreground text-sm">
+                        #{data.candidates[1].candidate_number}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider font-mono">
+                      Kandidat{" "}
+                      {String(data.candidates[1].candidate_number).padStart(
+                        2,
+                        "0",
+                      )}
+                    </p>
+                    <h3 className="font-heading text-base font-bold text-foreground truncate">
+                      {data.candidates[1].name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {data.candidates[1].class_name}
+                    </p>
+                    <p className="text-lg font-bold text-amber-600 mt-1">
+                      {data.candidates[1].percentage}%{" "}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        ({data.candidates[1].votes} suara)
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
+
+          {/* Central Split Progress Bar */}
+          <div className="w-full bg-muted h-5 rounded-full overflow-hidden flex border border-border">
+            {data.candidates[0] && (
+              <div
+                className="h-full bg-primary transition-[width] duration-300 ease-out"
+                style={{ width: `${data.candidates[0].percentage}%` }}
+              />
+            )}
+            {data.candidates[1] && (
+              <div
+                className="h-full bg-amber-500 transition-[width] duration-300 ease-out"
+                style={{ width: `${data.candidates[1].percentage}%` }}
+              />
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex justify-center w-full py-4">
+          <Card
+            className={cn(
+              "w-full max-w-3xl border border-border shadow-xs",
+              className,
+            )}
+          >
+            <CardHeader className="pb-6">
+              <CardTitle className="font-heading text-2xl font-bold">
+                {data.electionTitle}
+              </CardTitle>
+              <CardDescription className="text-sm">
+                Live count perolehan suara • Total {data.totalVotes} suara masuk
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              {sortedCandidates.map((item, index) => (
+                <div
+                  key={item.candidate_id}
+                  className="flex items-center gap-4 sm:gap-5 py-1"
+                >
+                  <span className="w-7 text-center text-base font-semibold text-muted-foreground font-mono">
+                    {index + 1}
+                  </span>
+                  <Avatar className="size-12 rounded-xl">
+                    <AvatarImage
+                      src={item.photo_url}
+                      alt={item.name}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="font-bold text-sm">
+                      {item.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-semibold text-foreground">
+                      #{item.candidate_number} {item.name}
+                    </p>
+                    {item.class_name && (
+                      <p className="truncate text-sm text-muted-foreground mt-0.5">
+                        {item.class_name} • {item.votes} suara
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-lg font-bold font-heading text-primary">
+                    {item.percentage}%
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
   );
 }
