@@ -22,7 +22,17 @@ export const auth = betterAuth({
     (process.env.NODE_ENV === "production"
       ? undefined
       : "dev-better-auth-secret-key-32-chars-long-e-vote"),
-  baseURL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  baseURL:
+    process.env.BETTER_AUTH_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000",
+  trustedOrigins: [
+    "http://localhost:3000",
+    ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
+    ...(process.env.NEXT_PUBLIC_APP_URL
+      ? [process.env.NEXT_PUBLIC_APP_URL]
+      : []),
+  ],
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
