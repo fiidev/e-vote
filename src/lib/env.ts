@@ -9,6 +9,7 @@ const envSchema = z.object({
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().min(1),
   SMTP_PASS: z.string().min(1),
+  SMTP_FROM: z.string().optional(),
   SMTP_RATE_PER_MINUTE: z.coerce.number().default(100),
   SMTP_DAILY_CAP: z.coerce.number().default(1990),
   SCHOOL_NAME: z.string().min(1),

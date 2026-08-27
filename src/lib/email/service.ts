@@ -134,12 +134,18 @@ export async function sendTokenEmails(
       appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "",
     });
 
+    const fromEmail =
+      env.SMTP_FROM ||
+      (env.SMTP_USER.includes("@")
+        ? env.SMTP_USER
+        : `noreply@${env.SMTP_HOST.replace(/^smtp\./i, "")}`);
+
     let lastError: unknown;
     let ok = false;
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await transporter.sendMail({
-          from: `"${env.FROM_NAME}" <${env.SMTP_USER}>`,
+          from: `"${env.FROM_NAME}" <${fromEmail}>`,
           to: built.to,
           subject: built.subject,
           html: built.html,
