@@ -1,14 +1,14 @@
-import { ElectionsClient } from "@/components/admin/elections-client";
-import db from "@/lib/db";
+import { redirect } from "next/navigation";
+import { ElectionsClient } from "@/features/elections/components/elections-client";
+import { listElections } from "@/features/elections/service";
+import { getAuthUser } from "@/lib/auth";
 
-/** Halaman daftar pemilihan — server component tipis. */
 export default async function AdminElectionsPage() {
-  const elections = await db.election.findMany({
-    orderBy: { start_time: "desc" },
-    include: {
-      _count: { select: { candidates: true, votes: true, tokens: true } },
-    },
-  });
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
+
+  const orgId = user.role === "SUPER_ADMIN" ? null : user.organizationId;
+  const elections = await listElections(orgId);
 
   return (
     <div className="space-y-6">

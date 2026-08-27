@@ -1,7 +1,9 @@
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { VotersClient } from "@/components/admin/voters-client";
-import { listVoters } from "@/lib/admin/service";
-import db from "@/lib/db";
+import { listElections } from "@/features/elections/service";
+import { VotersClient } from "@/features/voters/components/voters-client";
+import { listVoters } from "@/features/voters/service";
+import { getAuthUser } from "@/lib/auth";
 
 interface PageProps {
   searchParams: Promise<{
@@ -11,8 +13,11 @@ interface PageProps {
   }>;
 }
 
-/** Halaman daftar pemilih — server component tipis, searchParams untuk filter. */
 export default async function AdminVotersPage({ searchParams }: PageProps) {
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
+
+  const orgId = user.role === "SUPER_ADMIN" ? null : user.organizationId;
   const params = await searchParams;
 
   const status =
@@ -22,17 +27,22 @@ export default async function AdminVotersPage({ searchParams }: PageProps) {
       ? params.status
       : "ALL";
 
-  const [data, electionOptions] = await Promise.all([
-    listVoters({
-      page: params.page ? Number(params.page) : 1,
-      search: params.q ?? "",
-      emailStatus: status === "ALL" ? undefined : status,
-    }),
-    db.election.findMany({
-      orderBy: { start_time: "desc" },
-      select: { election_id: true, title: true },
-    }),
+  const [data, elections] = await Promise.all([
+    listVoters(
+      {
+        page: params.page ? Number(params.page) : 1,
+        search: params.q ?? "",
+        emailStatus: status === "ALL" ? undefined : status,
+      },
+      orgId,
+    ),
+    listElections(orgId),
   ]);
+
+  const electionOptions = elections.map((e) => ({
+    election_id: e.election_id,
+    title: e.title,
+  }));
 
   return (
     <div className="space-y-6">

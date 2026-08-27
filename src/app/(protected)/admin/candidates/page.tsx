@@ -1,20 +1,18 @@
-import { CandidatesClient } from "@/components/admin/candidates-client";
-import db from "@/lib/db";
+import { redirect } from "next/navigation";
+import { CandidatesClient } from "@/features/candidates/components/candidates-client";
+import { listCandidates } from "@/features/candidates/service";
+import { listElections } from "@/features/elections/service";
+import { getAuthUser } from "@/lib/auth";
 
-/** Halaman daftar kandidat — server component tipis, UI di CandidatesClient. */
 export default async function AdminCandidatesPage() {
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
+
+  const orgId = user.role === "SUPER_ADMIN" ? null : user.organizationId;
+
   const [candidates, elections] = await Promise.all([
-    db.candidate.findMany({
-      orderBy: [{ election_id: "asc" }, { candidate_number: "asc" }],
-      include: {
-        election: { select: { title: true } },
-        _count: { select: { votes: true } },
-      },
-    }),
-    db.election.findMany({
-      orderBy: { start_time: "desc" },
-      select: { election_id: true, title: true },
-    }),
+    listCandidates(undefined, orgId),
+    listElections(orgId),
   ]);
 
   return (

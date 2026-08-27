@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { AppSidebar } from "@/components/admin/app-sidebar";
+import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,

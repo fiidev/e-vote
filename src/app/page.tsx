@@ -1,5 +1,5 @@
-import { LandingClient } from "@/components/public/landing-client";
+import { LandingHero } from "@/features/voting/components/landing-hero";
 
 export default function Home() {
-  return <LandingClient />;
+  return <LandingHero />;
 }

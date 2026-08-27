@@ -1,5 +1,5 @@
-import { SuccessClient } from "@/components/public/success-client";
+import { VoteSuccess } from "@/features/voting/components/vote-success";
 
 export default function SuccessPage() {
-  return <SuccessClient />;
+  return <VoteSuccess />;
 }
