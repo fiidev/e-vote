@@ -90,16 +90,17 @@ describe("parseVoterImport", () => {
     expect(result.errors[0].message).toContain("contoh");
   });
 
-  it("tolak file jika email duplikat dalam file", () => {
+  it("auto-deduplicate email ganda dalam file (ambil baris pertama & hitung duplikat yang di-skip)", () => {
     const buffer = buildImportBuffer([
       ["Nama", "Email", "Role", "Angkatan"],
       ["Budi", "budi@x.id", "SISWA", "34"],
       ["Budi2", "BUDI@x.id", "SISWA", "34"],
     ]);
     const result = parseVoterImport(buffer);
-    expect(result.ok).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0].message).toContain("duplikat");
+    expect(result.ok).toBe(true);
+    expect(result.rows).toHaveLength(1);
+    expect(result.rows[0].name).toBe("Budi");
+    expect(result.duplicatesSkipped).toBe(1);
   });
 
   it("tolak baris dengan email tidak valid", () => {

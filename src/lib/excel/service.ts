@@ -26,13 +26,14 @@ export interface ImportParseResult {
   ok: boolean;
   rows: ParsedVoterRow[];
   errors: Array<{ row: number; message: string }>;
+  duplicatesSkipped: number;
 }
 
 const isExampleRow = (name: string, email: string) =>
   name.trim().toLowerCase().startsWith("contoh") ||
   email.trim().toLowerCase().startsWith("contoh@");
 
-/** Parse buffer excel → rows siap import. Tolak seluruh file jika ada error. */
+/** Parse buffer excel → rows siap import. Tolak seluruh file jika ada error format, skip duplikat otomatis. */
 export function parseVoterImport(
   buffer: ArrayBuffer | Buffer,
 ): ImportParseResult {
@@ -47,6 +48,7 @@ export function parseVoterImport(
       errors: [
         { row: 0, message: `Sheet "${IMPORT_SHEET_NAME}" tidak ditemukan.` },
       ],
+      duplicatesSkipped: 0,
     };
   }
 
@@ -60,6 +62,7 @@ export function parseVoterImport(
       ok: false,
       rows: [],
       errors: [{ row: 0, message: "File kosong." }],
+      duplicatesSkipped: 0,
     };
   }
 
@@ -78,11 +81,13 @@ export function parseVoterImport(
           message: `Header harus persis: ${IMPORT_HEADER.join(" | ")}.`,
         },
       ],
+      duplicatesSkipped: 0,
     };
   }
 
   const rows: ParsedVoterRow[] = [];
   const seenEmails = new Set<string>();
+  let duplicatesSkipped = 0;
 
   for (let i = 1; i < raw.length; i++) {
     const rowNum = i + 1;
@@ -119,7 +124,8 @@ export function parseVoterImport(
       continue;
     }
     if (seenEmails.has(email)) {
-      errors.push({ row: rowNum, message: `Email duplikat: ${email}.` });
+      // Auto-deduplicate: Lewati baris duplikat di dalam file yang sama (ambil baris pertama)
+      duplicatesSkipped++;
       continue;
     }
     const role = normalizeRole(String(roleRaw ?? "").trim() || "SISWA");
@@ -142,9 +148,9 @@ export function parseVoterImport(
   }
 
   if (errors.length > 0) {
-    return { ok: false, rows, errors };
+    return { ok: false, rows, errors, duplicatesSkipped };
   }
-  return { ok: true, rows, errors: [] };
+  return { ok: true, rows, errors: [], duplicatesSkipped };
 }
 
 /** Buffer template import (header + 1 baris contoh yang ditolak parser). */

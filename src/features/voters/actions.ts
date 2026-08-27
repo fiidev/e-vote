@@ -338,8 +338,12 @@ export async function importVotersAction(
   }
 
   revalidatePath("/admin/voters");
+  const duplicateInfo =
+    parsed.duplicatesSkipped > 0
+      ? ` (${parsed.duplicatesSkipped} data duplikat di file diabaikan)`
+      : "";
   return {
     ok: true,
-    message: `${parsed.rows.length} pemilih berhasil diimpor.`,
+    message: `${parsed.rows.length} pemilih berhasil diimpor.${duplicateInfo}`,
   };
 }
