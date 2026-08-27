@@ -47,7 +47,7 @@ export function CandidateCard({
           onSelect(candidate);
         }
       }}
-      className={`group relative w-72 h-[384px] shrink-0 rounded-3xl overflow-hidden cursor-pointer select-none border-3 transition-colors duration-150 ${
+      className={`group relative w-[268px] sm:w-72 h-[360px] sm:h-[384px] shrink-0 rounded-3xl overflow-hidden cursor-pointer select-none border-3 transition-colors duration-150 ${
         isSelected
           ? "border-cyan-950 ring-2 ring-cyan-950/30 shadow-lg"
           : "border-transparent hover:border-cyan-950/40 shadow-sm hover:shadow-md"

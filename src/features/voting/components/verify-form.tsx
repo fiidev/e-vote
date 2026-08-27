@@ -55,27 +55,27 @@ export function VerifyForm() {
   const isTokenFilled = tokenInput.replace(/[^A-Z0-9]/g, "").length >= 7;
 
   return (
-    <main className="min-h-dvh flex items-center justify-center bg-stone-100 p-4 sm:p-6">
-      <div className="relative w-full max-w-[1400px] min-h-[720px] rounded-[40px] sm:rounded-[70px] overflow-hidden bg-orange-100 flex flex-col items-center justify-center shadow-sm">
+    <main className="min-h-dvh flex items-center justify-center bg-stone-100 p-3 sm:p-6">
+      <div className="relative w-full max-w-[1400px] min-h-[580px] sm:min-h-[720px] rounded-[32px] sm:rounded-[70px] overflow-hidden bg-orange-100 flex flex-col items-center justify-between p-6 sm:p-12 shadow-sm">
         <Image
           src="/images/illustration-2-4003-205.png"
           alt=""
           width={384}
           height={618}
           priority
-          className="absolute left-0 bottom-0 w-96 h-[618px] object-cover opacity-60 pointer-events-none hidden md:block"
+          className="absolute left-[-24px] sm:left-[-40px] bottom-0 w-48 sm:w-64 lg:w-80 h-auto object-cover opacity-25 sm:opacity-30 lg:opacity-40 pointer-events-none select-none z-0"
         />
 
-        <div className="absolute top-8 sm:top-10 left-1/2 -translate-x-1/2 z-10">
+        <div className="w-full flex justify-center z-10">
           <VotingStepper currentStep={1} />
         </div>
 
-        <div className="w-full max-w-[851px] px-6 py-12 flex flex-col items-center gap-8 z-10">
-          <div className="flex flex-col items-center gap-3">
-            <h1 className="font-heading text-4xl sm:text-6xl font-bold text-cyan-950 tracking-wide text-center">
+        <div className="w-full max-w-[851px] px-2 sm:px-6 py-6 sm:py-10 flex flex-col items-center gap-6 sm:gap-8 z-10 my-auto">
+          <div className="flex flex-col items-center gap-2 sm:gap-3 text-center">
+            <h1 className="font-heading text-3xl sm:text-5xl md:text-6xl font-bold text-cyan-950 tracking-tight">
               Masukkan Token Voting
             </h1>
-            <p className="font-heading text-base sm:text-xl font-light text-cyan-950 tracking-wide text-center max-w-[564px]">
+            <p className="font-heading text-sm sm:text-lg md:text-xl font-light text-cyan-950/80 tracking-wide max-w-[564px]">
               Silakan masukkan token voting yang kamu peroleh dari panitia
               pemilihan.
             </p>
@@ -83,7 +83,7 @@ export function VerifyForm() {
 
           <form
             action={formAction}
-            className="flex flex-col items-center gap-6 w-full max-w-lg"
+            className="flex flex-col items-center gap-5 sm:gap-6 w-full max-w-md"
           >
             <div className="w-full flex flex-col items-center">
               <input
@@ -92,12 +92,12 @@ export function VerifyForm() {
                 value={tokenInput}
                 onChange={handleInputChange}
                 onPaste={handlePaste}
-                placeholder="Masukkan Tokennya..."
+                placeholder="MTC-XXXX-XXXX"
                 autoComplete="off"
                 autoCorrect="off"
                 spellCheck="false"
                 maxLength={16}
-                className="w-full h-20 text-center font-mono text-2xl sm:text-3xl font-bold tracking-widest uppercase rounded-2xl border-2 border-cyan-950/30 bg-white text-cyan-950 placeholder:text-cyan-950/25 placeholder:text-lg sm:placeholder:text-2xl focus:border-cyan-950 focus:ring-4 focus:ring-cyan-950/20 outline-none transition-all duration-200 shadow-sm"
+                className="w-full h-16 sm:h-20 text-center font-mono text-xl sm:text-3xl font-bold tracking-widest uppercase rounded-2xl border-2 border-cyan-950/30 bg-white text-cyan-950 placeholder:text-cyan-950/25 placeholder:text-base sm:placeholder:text-2xl focus:border-cyan-950 focus:ring-4 focus:ring-cyan-950/20 outline-none transition-all duration-200 shadow-sm"
                 aria-label="Token Voting"
               />
             </div>
@@ -105,16 +105,18 @@ export function VerifyForm() {
             <Button
               type="submit"
               isDisabled={isPending || !isTokenFilled}
-              className="h-14 w-44 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 transition-all duration-200 ease-out active:scale-95 hover:shadow-lg cursor-pointer"
+              className="h-12 sm:h-14 w-full sm:w-44 rounded-full bg-cyan-950 text-white font-heading text-lg sm:text-xl font-semibold tracking-wide hover:bg-cyan-900 disabled:opacity-40 transition-colors duration-150 cursor-pointer shadow-md"
             >
-              {isPending ? "Memeriksa…" : "Lanjut"}
+              {isPending ? "Memeriksa…" : "Lanjut ➔"}
             </Button>
           </form>
 
-          <p className="text-sm font-medium text-cyan-950 underline cursor-pointer hover:text-ink transition-colors">
+          <p className="text-xs sm:text-sm font-medium text-cyan-950/80 underline cursor-pointer hover:text-cyan-950 transition-colors">
             Tidak memiliki token? Hubungi Panitia
           </p>
         </div>
+
+        <div className="hidden sm:block" />
       </div>
     </main>
   );

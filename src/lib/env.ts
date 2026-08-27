@@ -15,6 +15,10 @@ const envSchema = z.object({
   SCHOOL_NAME: z.string().min(1),
   VOTING_LOCATION: z.string().min(1),
   FROM_NAME: z.string().min(1),
+  CLOUDINARY_URL: z.string().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().optional(),
+  BETTER_AUTH_SECRET: z.string().optional(),
+  BETTER_AUTH_URL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

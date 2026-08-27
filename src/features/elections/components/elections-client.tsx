@@ -184,11 +184,11 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <p className="text-sm text-ink-muted">
           {elections.length} pemilihan terdaftar.
         </p>
-        <Button onPress={openCreate}>
+        <Button onPress={openCreate} className="w-full sm:w-auto">
           <Plus className="size-4" aria-hidden />
           Buat Pemilihan
         </Button>
@@ -199,9 +199,10 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
           {
             key: "title",
             header: "Judul",
+            className: "min-w-[180px]",
             cell: (e) => (
               <div className="flex flex-wrap items-center gap-2">
-                <span className="font-medium">{e.title}</span>
+                <span className="font-semibold text-ink">{e.title}</span>
                 {e.is_active ? (
                   <Badge
                     variant="default"
@@ -221,8 +222,9 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
           {
             key: "window",
             header: "Jadwal",
+            className: "min-w-[170px] whitespace-nowrap",
             cell: (e) => (
-              <span className="text-sm text-ink font-medium font-mono text-xs sm:text-sm">
+              <span className="text-ink font-medium font-mono text-xs sm:text-sm">
                 {formatScheduleRange(e.start_time, e.end_time)}
               </span>
             ),
@@ -230,10 +232,11 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
           {
             key: "eligible",
             header: "Pemilih",
+            className: "min-w-[130px]",
             cell: (e) => (
               <div className="flex flex-wrap gap-1">
                 {e.eligible_roles.map((r) => (
-                  <Badge key={r} variant="outline">
+                  <Badge key={r} variant="outline" className="text-[11px]">
                     {r}
                   </Badge>
                 ))}
@@ -243,9 +246,10 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
           {
             key: "stats",
             header: "Progres",
+            className: "min-w-[100px] whitespace-nowrap",
             cell: (e) => (
               <div className="text-sm">
-                <p>{e._count.votes} suara</p>
+                <p className="font-medium text-ink">{e._count.votes} suara</p>
                 <p className="text-xs text-ink-muted">
                   {e._count.tokens} token
                 </p>
@@ -255,14 +259,16 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
           {
             key: "actions",
             header: "Aksi",
+            className: "min-w-[220px] text-right whitespace-nowrap",
+            headClassName: "text-right",
             cell: (e) => (
-              <div className="flex flex-wrap gap-1">
+              <div className="flex items-center justify-end gap-1.5">
                 <Button
                   variant="outline"
                   size="sm"
                   onPress={() => setTokenElection(e)}
                 >
-                  <KeyRound className="size-4" aria-hidden />
+                  <KeyRound className="size-3.5" aria-hidden />
                   Token
                 </Button>
                 <Button
@@ -270,8 +276,8 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                   size="sm"
                   onPress={() => setEmailElection(e)}
                 >
-                  <Send className="size-4" aria-hidden />
-                  Kirim Email
+                  <Send className="size-3.5" aria-hidden />
+                  Email
                 </Button>
                 <Button
                   variant="ghost"

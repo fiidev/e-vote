@@ -33,21 +33,15 @@ export function VoteSuccess() {
   }, [seconds, router]);
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-stone-100 overflow-hidden">
-      <div className="relative w-full max-w-[1400px] h-[800px] rounded-[70px] overflow-hidden mx-6">
-        <div className="absolute inset-0 bg-orange-100 rounded-[70px]" />
-
-        <div className="absolute top-8 sm:top-10 left-1/2 -translate-x-1/2 z-10">
-          <VotingStepper currentStep={3} />
-        </div>
-
+    <main className="flex min-h-dvh items-center justify-center bg-stone-100 p-3 sm:p-6 overflow-x-hidden">
+      <div className="relative w-full max-w-[1400px] min-h-[580px] sm:min-h-[720px] rounded-[32px] sm:rounded-[70px] overflow-hidden bg-orange-100 flex flex-col items-center justify-between p-6 sm:p-12 shadow-sm">
         <Image
           src="/images/illustration-2-4003-205.png"
           alt=""
           width={384}
           height={618}
           priority
-          className="absolute left-0 top-[186px] w-96 h-[618px] object-cover"
+          className="absolute left-[-24px] sm:left-[-40px] bottom-0 w-48 sm:w-64 lg:w-80 h-auto object-cover opacity-20 sm:opacity-25 lg:opacity-30 pointer-events-none select-none z-0"
         />
 
         <Image
@@ -56,20 +50,27 @@ export function VoteSuccess() {
           width={384}
           height={668}
           priority
-          className="absolute right-[26px] top-[132px] w-96 h-[668px] object-cover"
+          className="absolute right-[-20px] sm:right-[-30px] bottom-0 w-48 sm:w-64 lg:w-80 h-auto object-cover opacity-20 sm:opacity-25 lg:opacity-30 pointer-events-none select-none z-0"
         />
 
-        <div className="absolute left-1/2 top-[230px] -translate-x-1/2 w-[640px] text-center flex flex-col items-center gap-0">
-          <h1 className="font-heading text-7xl font-bold text-cyan-950 tracking-wide leading-tight">
+        <div className="w-full flex justify-center z-10">
+          <VotingStepper currentStep={3} />
+        </div>
+
+        <div className="max-w-2xl px-4 text-center flex flex-col items-center gap-4 my-auto py-8 z-10">
+          <h1 className="font-heading text-3xl sm:text-5xl md:text-6xl font-bold text-cyan-950 tracking-tight leading-tight">
             Suara kamu udah aman, mantap!
           </h1>
-          <p className="font-heading text-2xl font-normal text-cyan-950 tracking-wide max-w-[564px] mt-[183px]">
+          <p className="font-heading text-sm sm:text-lg md:text-xl font-light text-cyan-950/85 tracking-wide max-w-lg">
             Makasih udah ikutan voting. Pilihan kamu bikin langkah kita
             selanjutnya makin jelas.
           </p>
+        </div>
+
+        <div className="w-full flex justify-center z-10">
           <LinkButton
             href="/"
-            className="mt-[306px] h-14 w-72 rounded-full bg-cyan-950 text-white font-heading text-xl font-semibold tracking-wide hover:bg-cyan-900"
+            className="w-full sm:w-auto h-12 sm:h-14 px-8 rounded-full bg-cyan-950 text-white font-heading text-base sm:text-lg font-semibold tracking-wide hover:bg-cyan-900 transition-colors shadow-md"
           >
             Kembali Ke Beranda {seconds > 0 ? `(${seconds}s)` : ""}
           </LinkButton>

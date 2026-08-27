@@ -150,11 +150,15 @@ export function CandidatesClient({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <p className="text-sm text-ink-muted">
           {candidates.length} kandidat terdaftar.
         </p>
-        <Button onPress={openCreate} isDisabled={!hasElections}>
+        <Button
+          onPress={openCreate}
+          isDisabled={!hasElections}
+          className="w-full sm:w-auto"
+        >
           <Plus className="size-4" aria-hidden />
           Tambah Kandidat
         </Button>
@@ -165,20 +169,25 @@ export function CandidatesClient({
           {
             key: "number",
             header: "No",
+            className: "w-12 text-center",
+            headClassName: "w-12 text-center",
             cell: (c) => (
-              <span className="font-semibold">{c.candidate_number}</span>
+              <span className="font-semibold font-mono text-sm">
+                #{c.candidate_number}
+              </span>
             ),
           },
           {
             key: "name",
             header: "Nama",
+            className: "min-w-[200px]",
             cell: (c) => (
               <div className="flex items-center gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-peach text-sm font-bold text-primary">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-peach text-sm font-bold text-primary">
                   {c.name[0]?.toUpperCase() ?? "?"}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{c.name}</p>
+                  <p className="font-semibold text-ink truncate">{c.name}</p>
                   <p className="text-xs text-ink-muted">{c.class_name}</p>
                 </div>
               </div>
@@ -187,11 +196,17 @@ export function CandidatesClient({
           {
             key: "election",
             header: "Pemilihan",
-            cell: (c) => <span className="text-sm">{c.election.title}</span>,
+            className: "min-w-[160px]",
+            cell: (c) => (
+              <span className="text-sm text-ink font-medium">
+                {c.election.title}
+              </span>
+            ),
           },
           {
             key: "votes",
             header: "Suara",
+            className: "min-w-[100px] whitespace-nowrap",
             cell: (c) => (
               <Badge variant="outline">{c._count.votes} suara</Badge>
             ),
@@ -199,8 +214,10 @@ export function CandidatesClient({
           {
             key: "actions",
             header: "Aksi",
+            className: "min-w-[100px] text-right whitespace-nowrap",
+            headClassName: "text-right",
             cell: (c) => (
-              <div className="flex gap-1">
+              <div className="flex items-center justify-end gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
