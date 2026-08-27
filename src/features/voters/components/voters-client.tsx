@@ -157,6 +157,9 @@ export function VotersClient({
   const [selectedElection, setSelectedElection] = useState(
     electionOptions[0]?.election_id ?? "",
   );
+  const [importElectionId, setImportElectionId] = useState(
+    electionOptions[0]?.election_id ?? "",
+  );
 
   function openCreate() {
     setEditing(null);
@@ -261,7 +264,18 @@ export function VotersClient({
             <FileDown className="size-4" aria-hidden />
             Template
           </a>
-          <Button variant="outline" onPress={() => setImportOpen(true)}>
+          <Button
+            variant="outline"
+            onPress={() => {
+              if (electionOptions.length === 0) {
+                toast.error(
+                  "Belum ada pemilihan yang tersedia. Buat pemilihan terlebih dahulu.",
+                );
+                return;
+              }
+              setImportOpen(true);
+            }}
+          >
             <Upload className="size-4" aria-hidden />
             Import Excel
           </Button>
@@ -720,6 +734,44 @@ export function VotersClient({
               {importState.errors.file[0]}
             </p>
           ) : null}
+
+          <div className="space-y-1.5">
+            <Label htmlFor="import_election_select">Sesi Pemilihan</Label>
+            <Select
+              name="election_id"
+              selectedKey={importElectionId}
+              onSelectionChange={(key) =>
+                setImportElectionId(String(key ?? ""))
+              }
+              placeholder="Pilih pemilihan"
+              aria-label="Pilih sesi pemilihan untuk import pemilih"
+              className="w-full"
+            >
+              <SelectTrigger
+                id="import_election_select"
+                aria-label="Pilih sesi pemilihan"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {electionOptions.map((e) => (
+                  <SelectItem
+                    key={e.election_id}
+                    id={e.election_id}
+                    textValue={e.title}
+                  >
+                    <span className="truncate">{e.title}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {importState.errors?.election_id ? (
+              <p className="text-xs text-destructive">
+                {importState.errors.election_id[0]}
+              </p>
+            ) : null}
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="file">File Excel (.xlsx)</Label>
             <Input
