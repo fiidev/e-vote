@@ -24,6 +24,7 @@
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@shadcn/react": "^0.3.0",
+    "@swc/helpers": "^0.5.23",
     "better-auth": "^1.7.1",
     "class-variance-authority": "^0.7.1",
     "cloudinary": "^2.10.1",
