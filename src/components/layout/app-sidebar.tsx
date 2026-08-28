@@ -2,7 +2,6 @@
 
 import {
   Building2,
-  GraduationCap,
   LayoutDashboard,
   ListChecks,
   Loader2,
@@ -80,9 +79,6 @@ export function AppSidebar({ user }: AppSidebarProps) {
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex items-center gap-2.5 px-2 py-1.5 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-orange-500 text-white shadow-xs">
-            <GraduationCap className="size-5" aria-hidden />
-          </div>
           <div className="min-w-0 flex-1 group-data-[collapsible=icon]:hidden">
             <span className="truncate text-sm font-bold text-ink block">
               E-Vote
