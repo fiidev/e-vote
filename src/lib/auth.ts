@@ -167,6 +167,12 @@ export const auth = betterAuth({
       generateId: false,
       joins: true,
     },
+    useSecureCookies:
+      process.env.NODE_ENV === "production" ||
+      Boolean(process.env.BETTER_AUTH_URL?.startsWith("https")),
+    ipAddress: {
+      ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip"],
+    },
   },
   socialProviders: {
     google: {
