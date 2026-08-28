@@ -25,13 +25,6 @@ export function CandidateCard({
   onSelect,
   isSelected,
 }: CandidateCardProps) {
-  const initials = candidate.name
-    .split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
   const formattedNumber = String(candidate.candidate_number).padStart(2, "0");
 
   return (
@@ -54,21 +47,26 @@ export function CandidateCard({
       }`}
     >
       {/* Full Poster Photo */}
-      <div className="absolute inset-0 bg-stone-200">
+      <div className="absolute inset-0 bg-stone-100 flex items-center justify-center overflow-hidden">
         {candidate.photo_url ? (
           // biome-ignore lint/performance/noImgElement: dynamic user-uploaded URL
           <img
             src={candidate.photo_url}
             alt={`Foto ${candidate.name}`}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = "/images/candidate-placeholder.png";
+              e.currentTarget.className =
+                "w-36 h-36 sm:w-40 sm:h-40 object-contain opacity-80";
+            }}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-peach text-cyan-950/40">
-            <span className="font-heading text-6xl font-bold">{initials}</span>
-            <span className="text-xs font-mono font-bold mt-2 text-cyan-950/60">
-              #{formattedNumber}
-            </span>
-          </div>
+          // biome-ignore lint/performance/noImgElement: static default placeholder
+          <img
+            src="/images/candidate-placeholder.png"
+            alt="Default Avatar"
+            className="w-36 h-36 sm:w-40 sm:h-40 object-contain opacity-80"
+          />
         )}
       </div>
 

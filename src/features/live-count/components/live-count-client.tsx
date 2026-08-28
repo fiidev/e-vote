@@ -235,11 +235,20 @@ export function LiveCountClient({
                               src={data.candidates[0].photo_url}
                               alt={data.candidates[0].name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "/images/candidate-placeholder.png";
+                                e.currentTarget.className =
+                                  "w-10 h-10 object-contain opacity-70 m-auto";
+                              }}
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center font-bold text-muted-foreground text-sm">
-                              #{data.candidates[0].candidate_number}
-                            </div>
+                            // biome-ignore lint/performance/noImgElement: default candidate avatar
+                            <img
+                              src="/images/candidate-placeholder.png"
+                              alt="Default Avatar"
+                              className="w-10 h-10 object-contain opacity-70 m-auto"
+                            />
                           )}
                         </div>
                       </div>
@@ -283,7 +292,7 @@ export function LiveCountClient({
                     )}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="relative size-16 shrink-0 rounded-xl bg-muted">
+                      <div className="relative size-16 shrink-0 rounded-xl bg-muted flex items-center justify-center">
                         {isLead && (
                           <div
                             className="absolute -top-3.5 -left-2.5 z-20 select-none pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.35)] transform -rotate-[18deg]"
@@ -294,7 +303,7 @@ export function LiveCountClient({
                         )}
                         <div
                           className={cn(
-                            "w-full h-full rounded-xl overflow-hidden",
+                            "w-full h-full rounded-xl overflow-hidden flex items-center justify-center",
                             isLead && "ring-2 ring-amber-400 ring-offset-1",
                           )}
                         >
@@ -304,11 +313,20 @@ export function LiveCountClient({
                               src={data.candidates[1].photo_url}
                               alt={data.candidates[1].name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "/images/candidate-placeholder.png";
+                                e.currentTarget.className =
+                                  "w-10 h-10 object-contain opacity-70 m-auto";
+                              }}
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center font-bold text-muted-foreground text-sm">
-                              #{data.candidates[1].candidate_number}
-                            </div>
+                            // biome-ignore lint/performance/noImgElement: default candidate avatar
+                            <img
+                              src="/images/candidate-placeholder.png"
+                              alt="Default Avatar"
+                              className="w-10 h-10 object-contain opacity-70 m-auto"
+                            />
                           )}
                         </div>
                       </div>
@@ -398,7 +416,10 @@ export function LiveCountClient({
                         )}
                       >
                         <AvatarImage
-                          src={item.photo_url}
+                          src={
+                            item.photo_url ||
+                            "/images/candidate-placeholder.png"
+                          }
                           alt={item.name}
                           className="object-cover"
                         />

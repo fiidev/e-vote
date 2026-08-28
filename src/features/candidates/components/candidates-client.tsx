@@ -1,6 +1,6 @@
 "use client";
 
-import { ImageIcon, Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import {
   useActionState,
   useEffect,
@@ -183,8 +183,28 @@ export function CandidatesClient({
             className: "min-w-[200px]",
             cell: (c) => (
               <div className="flex items-center gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-peach text-sm font-bold text-primary">
-                  {c.name[0]?.toUpperCase() ?? "?"}
+                <div className="size-10 shrink-0 rounded-xl overflow-hidden bg-muted flex items-center justify-center border border-line">
+                  {c.photo_url ? (
+                    // biome-ignore lint/performance/noImgElement: candidate avatar
+                    <img
+                      src={c.photo_url}
+                      alt={c.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "/images/candidate-placeholder.png";
+                        e.currentTarget.className =
+                          "w-7 h-7 object-contain opacity-70";
+                      }}
+                    />
+                  ) : (
+                    // biome-ignore lint/performance/noImgElement: default candidate avatar
+                    <img
+                      src="/images/candidate-placeholder.png"
+                      alt="Default Avatar"
+                      className="w-7 h-7 object-contain opacity-70"
+                    />
+                  )}
                 </div>
                 <div className="min-w-0">
                   <p className="font-semibold text-ink truncate">{c.name}</p>
@@ -439,9 +459,19 @@ export function CandidatesClient({
                     src={previewUrl}
                     alt="Preview foto kandidat"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/images/candidate-placeholder.png";
+                      e.currentTarget.className =
+                        "w-10 h-10 object-contain opacity-70";
+                    }}
                   />
                 ) : (
-                  <ImageIcon className="size-6 text-muted-foreground opacity-50" />
+                  // biome-ignore lint/performance/noImgElement: default candidate avatar
+                  <img
+                    src="/images/candidate-placeholder.png"
+                    alt="Default Avatar"
+                    className="w-10 h-10 object-contain opacity-70"
+                  />
                 )}
               </div>
               <div className="flex-1 min-w-0">
