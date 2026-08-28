@@ -53,6 +53,9 @@ interface OrgItem {
   code: string;
   parentId?: string | null;
   description?: string | null;
+  electionCount?: number;
+  voterCount?: number;
+  childCount?: number;
 }
 
 interface OrganizationsClientProps {
@@ -286,7 +289,21 @@ export function OrganizationsClient({
                     size="sm"
                     variant="ghost"
                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onPress={() => setDeletingOrg(org)}
+                    onPress={() => {
+                      const electionCount = org._count?.elections ?? 0;
+                      const voterCount =
+                        org.elections?.reduce(
+                          (sum, e) => sum + (e._count?.voters ?? 0),
+                          0,
+                        ) ?? 0;
+                      const childCount = org.children?.length ?? 0;
+                      setDeletingOrg({
+                        ...org,
+                        electionCount,
+                        voterCount,
+                        childCount,
+                      });
+                    }}
                   >
                     <Trash2 className="size-3.5" />
                   </Button>
@@ -404,7 +421,20 @@ export function OrganizationsClient({
                           size="sm"
                           variant="ghost"
                           className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onPress={() => setDeletingOrg(sub)}
+                          onPress={() => {
+                            const electionCount = sub._count?.elections ?? 0;
+                            const voterCount =
+                              sub.elections?.reduce(
+                                (sum, e) => sum + (e._count?.voters ?? 0),
+                                0,
+                              ) ?? 0;
+                            setDeletingOrg({
+                              ...sub,
+                              electionCount,
+                              voterCount,
+                              childCount: 0,
+                            });
+                          }}
                         >
                           <Trash2 className="size-3" />
                         </Button>
@@ -628,9 +658,34 @@ export function OrganizationsClient({
           <AlertDialogDescription>
             Apakah Anda yakin ingin menghapus organisasi{" "}
             <span className="font-semibold text-ink">{deletingOrg?.name}</span>?
-            Tindakan ini tidak dapat dibatalkan.
           </AlertDialogDescription>
         </AlertDialogHeader>
+
+        {((deletingOrg?.electionCount ?? 0) > 0 ||
+          (deletingOrg?.voterCount ?? 0) > 0 ||
+          (deletingOrg?.childCount ?? 0) > 0) && (
+          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-800 dark:text-amber-300 space-y-1.5 my-2">
+            <p className="font-semibold flex items-center gap-1.5 text-amber-900 dark:text-amber-200">
+              <span className="inline-block size-2 rounded-full bg-amber-500 animate-pulse" />
+              Peringatan: Data Terkait Akan Terhapus
+            </p>
+            <p className="leading-relaxed">
+              Organisasi ini memiliki{" "}
+              <strong>{deletingOrg?.electionCount ?? 0} sesi pemilihan</strong>,{" "}
+              <strong>{deletingOrg?.voterCount ?? 0} data pemilih</strong>
+              {(deletingOrg?.childCount ?? 0) > 0
+                ? `, dan ${deletingOrg?.childCount} sub-organisasi`
+                : ""}
+              .
+            </p>
+            <p className="text-[11px] text-amber-700/90 dark:text-amber-400">
+              Menghapus organisasi ini akan menghapus seluruh data sesi
+              pemilihan, kandidat, dan pemilih terkait secara permanen (selama
+              belum ada suara yang dicoblos).
+            </p>
+          </div>
+        )}
+
         <AlertDialogFooter>
           <AlertDialogCancel isDisabled={isDeleting}>Batal</AlertDialogCancel>
           <Button
@@ -641,7 +696,9 @@ export function OrganizationsClient({
             {isDeleting ? (
               <Loader2 className="size-4 animate-spin mr-2" />
             ) : null}
-            Hapus
+            {(deletingOrg?.electionCount ?? 0) > 0
+              ? "Ya, Hapus Semua Data"
+              : "Hapus Organisasi"}
           </Button>
         </AlertDialogFooter>
       </AlertDialog>
