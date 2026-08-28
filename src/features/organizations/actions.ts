@@ -148,25 +148,18 @@ export async function deleteOrganizationAction(
   try {
     await deleteOrganization(id);
     revalidatePath("/admin/organizations");
-    return { ok: true, message: "Organisasi berhasil dihapus." };
+    return {
+      ok: true,
+      message: "Organisasi dan seluruh data terkait berhasil dihapus.",
+    };
   } catch (err) {
     if (err instanceof Error) {
-      if (err.message === "ORG_HAS_ELECTIONS") {
+      if (err.message === "ORG_HAS_CAST_VOTES") {
         return {
           ok: false,
           errors: {
             _form: [
-              "Organisasi tidak dapat dihapus karena memiliki data pemilihan.",
-            ],
-          },
-        };
-      }
-      if (err.message === "ORG_HAS_CHILDREN") {
-        return {
-          ok: false,
-          errors: {
-            _form: [
-              "Organisasi induk tidak dapat dihapus karena masih memiliki sub-organisasi.",
+              "Organisasi tidak dapat dihapus karena sesi pemilihan sudah memiliki riwayat suara sah yang telah dicoblos.",
             ],
           },
         };

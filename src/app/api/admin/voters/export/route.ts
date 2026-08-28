@@ -2,8 +2,6 @@ import { getAuthUser } from "@/lib/auth";
 import db from "@/lib/db";
 import { buildTokenListBuffer } from "@/lib/excel/service";
 
-export const dynamic = "force-dynamic";
-
 /**
  * GET /api/admin/voters/export?election_id=…
  * Download daftar token voter untuk satu pemilihan (display XXXX-XXXX).

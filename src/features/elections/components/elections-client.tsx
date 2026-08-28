@@ -1,6 +1,14 @@
 "use client";
 
-import { KeyRound, Loader2, Pencil, Plus, Send, Trash2 } from "lucide-react";
+import {
+  Download,
+  KeyRound,
+  Loader2,
+  Pencil,
+  Plus,
+  Send,
+  Trash2,
+} from "lucide-react";
 import {
   useActionState,
   useEffect,
@@ -279,6 +287,20 @@ export function ElectionsClient({ elections }: ElectionsClientProps) {
                   <Send className="size-3.5" aria-hidden />
                   Email
                 </Button>
+                <a
+                  href={`/api/admin/elections/recap?election_id=${e.election_id}`}
+                  download
+                  title="Unduh Rekapitulasi Suara (.xlsx)"
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={`Unduh rekap suara ${e.title}`}
+                  >
+                    <Download className="size-3.5" aria-hidden />
+                    Rekap
+                  </Button>
+                </a>
                 <Button
                   variant="ghost"
                   size="icon"

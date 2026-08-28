@@ -23,8 +23,24 @@ export async function listOrganizationsHierarchy() {
               termEnd: true,
             },
           },
+          elections: {
+            select: {
+              election_id: true,
+              _count: {
+                select: { voters: true },
+              },
+            },
+          },
           _count: {
             select: { elections: true, admins: true },
+          },
+        },
+      },
+      elections: {
+        select: {
+          election_id: true,
+          _count: {
+            select: { voters: true },
           },
         },
       },
@@ -133,15 +149,87 @@ export async function updateOrganization(data: OrganizationUpdateInput) {
 }
 
 export async function deleteOrganization(id: string) {
-  const [electionCount, childCount] = await Promise.all([
-    db.election.count({ where: { organizationId: id } }),
-    db.organization.count({ where: { parentId: id } }),
-  ]);
+  const org = await db.organization.findUnique({
+    where: { id },
+    include: {
+      children: {
+        include: {
+          elections: {
+            include: {
+              _count: { select: { votes: true } },
+            },
+          },
+        },
+      },
+      elections: {
+        include: {
+          _count: { select: { votes: true } },
+        },
+      },
+    },
+  });
 
-  if (electionCount > 0) throw new Error("ORG_HAS_ELECTIONS");
-  if (childCount > 0) throw new Error("ORG_HAS_CHILDREN");
+  if (!org) throw new Error("ORG_NOT_FOUND");
 
-  await db.organization.delete({ where: { id } });
+  // Periksa apakah ada suara sah yang sudah masuk
+  const allElections = [
+    ...org.elections,
+    ...org.children.flatMap((c) => c.elections),
+  ];
+  const hasCastVotes = allElections.some((e) => e._count.votes > 0);
+
+  if (hasCastVotes) {
+    throw new Error("ORG_HAS_CAST_VOTES");
+  }
+
+  const allElectionIds = allElections.map((e) => e.election_id);
+  const childOrgIds = org.children.map((c) => c.id);
+
+  // Jalankan atomic cascade delete dalam transaksi
+  await db.$transaction(
+    async (tx) => {
+      if (allElectionIds.length > 0) {
+        // 1. Hapus token pemilih
+        await tx.voteToken.deleteMany({
+          where: { election_id: { in: allElectionIds } },
+        });
+
+        // 2. Hapus data pemilih (DPT)
+        await tx.voter.deleteMany({
+          where: { election_id: { in: allElectionIds } },
+        });
+
+        // 3. Hapus kandidat
+        await tx.candidate.deleteMany({
+          where: { election_id: { in: allElectionIds } },
+        });
+
+        // 4. Hapus sesi pemilihan
+        await tx.election.deleteMany({
+          where: { election_id: { in: allElectionIds } },
+        });
+      }
+
+      // 5. Lepas relasi panitia / admin organisasi
+      await tx.adminUser.updateMany({
+        where: { organizationId: { in: [id, ...childOrgIds] } },
+        data: { organizationId: null },
+      });
+
+      // 6. Hapus sub-organisasi jika ada
+      if (childOrgIds.length > 0) {
+        await tx.organization.deleteMany({
+          where: { id: { in: childOrgIds } },
+        });
+      }
+
+      // 7. Hapus organisasi utama
+      await tx.organization.delete({
+        where: { id },
+      });
+    },
+    { timeout: 60000 },
+  );
 }
 
 export async function listOrgAdmins(orgId?: string) {

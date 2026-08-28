@@ -1,8 +1,6 @@
 import { getAuthUser } from "@/lib/auth";
 import { buildVoterTemplateBuffer } from "@/lib/excel/service";
 
-export const dynamic = "force-dynamic";
-
 /**
  * GET /api/admin/voters/template
  * Download template import pemilih (header + 1 baris contoh yang ditolak parser).
