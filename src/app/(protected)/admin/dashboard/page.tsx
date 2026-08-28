@@ -55,7 +55,8 @@ export default async function AdminDashboardPage() {
       <div>
         <h1 className="text-2xl font-bold text-ink">Dashboard</h1>
         <p className="text-sm text-ink-muted">
-          Ringkasan pemilihan ketua Organisasi / Sub-Organisasi SMK Telkom Malang.
+          Ringkasan pemilihan ketua Organisasi / Sub-Organisasi SMK Telkom
+          Malang.
         </p>
       </div>
 
