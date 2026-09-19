@@ -5,9 +5,9 @@ import { NextResponse } from "next/server";
  * Proxy (Next.js 16).
  * 1. Proteksi rute admin: tanpa cookie session better-auth → redirect ke /login.
  * 2. Edge routing voting kiosk:
- *    - Akses /verify dengan session aktif → redirect ke /vote.
- *    - Akses /vote tanpa session → redirect ke /verify.
- * Menjadikan halaman /verify murni statis (SSG) sehingga aman di-cache Cloudflare Edge CDN.
+ *    - Hanya mencegat request GET agar tidak mengganggu Server Actions (POST).
+ *    - Akses GET /verify dengan session aktif → redirect ke /vote.
+ *    - Akses GET /vote tanpa session → redirect ke /verify.
  */
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -25,18 +25,20 @@ export default function proxy(request: NextRequest) {
     }
   }
 
-  // 2. Kiosk voting guard
-  if (pathname === "/verify") {
-    const voteSession = request.cookies.get("vote_session")?.value;
-    if (voteSession) {
-      return NextResponse.redirect(new URL("/vote", request.url));
+  // 2. Kiosk voting guard (hanya untuk navigasi halaman GET, biarkan POST Server Action lewat)
+  if (request.method === "GET") {
+    if (pathname === "/verify") {
+      const voteSession = request.cookies.get("vote_session")?.value;
+      if (voteSession) {
+        return NextResponse.redirect(new URL("/vote", request.url));
+      }
     }
-  }
 
-  if (pathname === "/vote") {
-    const voteSession = request.cookies.get("vote_session")?.value;
-    if (!voteSession) {
-      return NextResponse.redirect(new URL("/verify", request.url));
+    if (pathname === "/vote") {
+      const voteSession = request.cookies.get("vote_session")?.value;
+      if (!voteSession) {
+        return NextResponse.redirect(new URL("/verify", request.url));
+      }
     }
   }
 

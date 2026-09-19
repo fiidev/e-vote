@@ -18,5 +18,12 @@ export class VoteError extends Error {
 }
 
 export function isVoteError(error: unknown): error is VoteError {
-  return error instanceof VoteError;
+  return (
+    error instanceof VoteError ||
+    (typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      ((error as { name?: string }).name === "VoteError" ||
+        typeof (error as { code?: unknown }).code === "string"))
+  );
 }
