@@ -1,4 +1,11 @@
+import type { Metadata } from "next";
 import { VerifyForm } from "@/features/voting/components/verify-form";
+
+export const metadata: Metadata = {
+  title: "Verifikasi Token Voting",
+  description:
+    "Masukkan kode token unik pemilihan untuk mengakses bilik suara dan menyalurkan hak suara Anda.",
+};
 
 /**
  * Halaman Verifikasi Token Kiosk.

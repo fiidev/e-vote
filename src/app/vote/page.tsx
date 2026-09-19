@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LinkButton } from "@/components/ui/button";
 import { VoteBoard } from "@/features/voting/components/vote-board";
@@ -5,6 +6,15 @@ import { ErrorAlert } from "@/features/voting/error-alert";
 import { isVoteError } from "@/features/voting/errors";
 import { getActiveElection } from "@/features/voting/service";
 import { getVoteSession } from "@/features/voting/session";
+
+export const metadata: Metadata = {
+  title: "Surat Suara Digital",
+  description: "Bilik suara pemilihan ketua OSIS digital.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default async function VotePage() {
   const session = await getVoteSession();
