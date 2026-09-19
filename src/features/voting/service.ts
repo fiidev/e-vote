@@ -69,35 +69,6 @@ export async function getActiveElection(
 
   const now = new Date();
 
-  // Optimasi cepat: ambil pemilu aktif langsung dari tabel election (jauh lebih cepat daripada join vote_tokens)
-  const election = await db.election.findFirst({
-    where: {
-      is_active: true,
-      start_time: { lte: now },
-      end_time: { gte: now },
-    },
-    include: {
-      organization: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-          slug: true,
-          logoUrl: true,
-        },
-      },
-      candidates: { orderBy: { candidate_number: "asc" } },
-    },
-  });
-
-  if (election) {
-    if (!isTest) {
-      cachedActiveElection = { data: election, timestamp: nowMs };
-    }
-    return election;
-  }
-
-  // Fallback: jika pemilu spesifik dicari via token
   if (tokenCode) {
     const token = await db.voteToken.findUnique({
       where: { token_code: tokenCode },
@@ -126,7 +97,31 @@ export async function getActiveElection(
     }
   }
 
-  throw new VoteError("ELECTION_NOT_FOUND");
+  const election = await db.election.findFirst({
+    where: {
+      is_active: true,
+      start_time: { lte: now },
+      end_time: { gte: now },
+    },
+    include: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          slug: true,
+          logoUrl: true,
+        },
+      },
+      candidates: { orderBy: { candidate_number: "asc" } },
+    },
+  });
+
+  if (!election) throw new VoteError("ELECTION_NOT_FOUND");
+  if (!isTest) {
+    cachedActiveElection = { data: election, timestamp: nowMs };
+  }
+  return election;
 }
 
 /**

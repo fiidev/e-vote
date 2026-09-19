@@ -103,14 +103,12 @@ export default function RootLayout({
       lang="id"
       className={cn("h-full", "antialiased", "font-sans", inter.variable)}
     >
-      <head>
+      <body className="min-h-full flex flex-col">
         <script
           type="application/ld+json"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: JSON-LD requires structured JSON string for SEO crawlers
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-      </head>
-      <body className="min-h-full flex flex-col">
         <ToastProvider />
         {children}
       </body>
