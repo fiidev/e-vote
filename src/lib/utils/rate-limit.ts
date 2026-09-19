@@ -33,9 +33,9 @@ export function createRateLimiter(
   options: RateLimiterOptions = {},
 ): RateLimiter {
   const {
-    maxAttemptsPerToken = 5,
-    maxGlobalFailuresPerWindow = 50,
-    windowMs = 60_000,
+    maxAttemptsPerToken = Number(process.env.RATE_LIMIT_TOKEN_MAX || 5),
+    maxGlobalFailuresPerWindow = Number(process.env.RATE_LIMIT_GLOBAL_MAX || 2000),
+    windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000),
   } = options;
 
   const tokenAttempts = new Map<string, number>();

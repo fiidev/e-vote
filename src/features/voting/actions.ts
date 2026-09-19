@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { isVoteError } from "@/features/voting/errors";
 import { castVoteSchema, verifyTokenSchema } from "@/features/voting/schemas";
@@ -30,7 +29,6 @@ export async function verifyTokenAction(
   try {
     await verifyToken(parsed.data);
     await setVoteSession(parsed.data.token);
-    revalidatePath("/vote");
     redirect("/vote");
   } catch (error) {
     if (isVoteError(error)) return { error: error.code };
@@ -54,7 +52,6 @@ export async function castVoteAction(
   try {
     await castVote({ token, candidateId: parsed.data.candidateId });
     await clearVoteSession();
-    revalidatePath("/success");
     redirect("/success");
   } catch (error) {
     if (isVoteError(error)) return { error: error.code };
