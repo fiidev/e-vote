@@ -41,10 +41,32 @@ type Candidate = {
   mission: string;
 };
 
-/** Ambil pemilu aktif beserta kandidatnya dan info organisasi. */
+let cachedActiveElection: {
+  data: ElectionWithCandidates;
+  timestamp: number;
+} | null = null;
+const ELECTION_CACHE_TTL_MS = 60_000;
+
+/** Membersihkan cache in-memory pemilu (berguna saat ada pembaruan admin / testing). */
+export function clearElectionCache(): void {
+  cachedActiveElection = null;
+}
+
+/** Ambil pemilu aktif beserta kandidatnya dan info organisasi (di-cache di RAM server saat produksi). */
 export async function getActiveElection(
   tokenCode?: string | null,
 ): Promise<ElectionWithCandidates> {
+  const isTest = process.env.NODE_ENV === "test";
+  const nowMs = Date.now();
+
+  if (
+    !isTest &&
+    cachedActiveElection &&
+    nowMs - cachedActiveElection.timestamp < ELECTION_CACHE_TTL_MS
+  ) {
+    return cachedActiveElection.data;
+  }
+
   const now = new Date();
 
   if (tokenCode) {
@@ -68,6 +90,9 @@ export async function getActiveElection(
       },
     });
     if (token?.election) {
+      if (!isTest) {
+        cachedActiveElection = { data: token.election, timestamp: nowMs };
+      }
       return token.election;
     }
   }
@@ -93,6 +118,9 @@ export async function getActiveElection(
   });
 
   if (!election) throw new VoteError("ELECTION_NOT_FOUND");
+  if (!isTest) {
+    cachedActiveElection = { data: election, timestamp: nowMs };
+  }
   return election;
 }
 

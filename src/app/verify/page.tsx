@@ -1,10 +1,10 @@
-import { redirect } from "next/navigation";
 import { VerifyForm } from "@/features/voting/components/verify-form";
-import { getVoteSession } from "@/features/voting/session";
 
-export default async function VerifyPage() {
-  const session = await getVoteSession();
-  if (session) redirect("/vote");
-
+/**
+ * Halaman Verifikasi Token Kiosk.
+ * Bersifat statis (SSG) — redirect session ditangani di edge proxy (src/proxy.ts).
+ * Sangat optimal untuk di-cache oleh Cloudflare Edge CDN pada beban ribuan user.
+ */
+export default function VerifyPage() {
   return <VerifyForm />;
 }
