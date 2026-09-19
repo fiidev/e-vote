@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { VoteError } from "@/features/voting/errors";
 import type {
   CastVoteOutput,
@@ -42,72 +41,57 @@ type Candidate = {
   mission: string;
 };
 
-/** Ambil data pemilu aktif beserta kandidatnya (di-cache untuk mengurangi beban join DB). */
-export const getCachedElectionById = unstable_cache(
-  async (electionId: string) => {
-    return await db.election.findUnique({
-      where: { election_id: electionId },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            slug: true,
-            logoUrl: true,
-          },
-        },
-        candidates: { orderBy: { candidate_number: "asc" } },
-      },
-    });
-  },
-  ["election-candidates-by-id"],
-  { revalidate: 300, tags: ["election"] },
-);
-
-export const getCachedCurrentActiveElection = unstable_cache(
-  async () => {
-    const now = new Date();
-    return await db.election.findFirst({
-      where: {
-        is_active: true,
-        start_time: { lte: now },
-        end_time: { gte: now },
-      },
-      include: {
-        organization: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            slug: true,
-            logoUrl: true,
-          },
-        },
-        candidates: { orderBy: { candidate_number: "asc" } },
-      },
-    });
-  },
-  ["election-candidates-active-now"],
-  { revalidate: 60, tags: ["election"] },
-);
-
 /** Ambil pemilu aktif beserta kandidatnya dan info organisasi. */
 export async function getActiveElection(
   tokenCode?: string | null,
 ): Promise<ElectionWithCandidates> {
+  const now = new Date();
+
   if (tokenCode) {
     const token = await db.voteToken.findUnique({
       where: { token_code: tokenCode },
-      select: { election_id: true },
+      include: {
+        election: {
+          include: {
+            organization: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                slug: true,
+                logoUrl: true,
+              },
+            },
+            candidates: { orderBy: { candidate_number: "asc" } },
+          },
+        },
+      },
     });
-    if (token?.election_id) {
-      const election = await getCachedElectionById(token.election_id);
-      if (election) return election;
+    if (token?.election) {
+      return token.election;
     }
   }
 
-  const election = await getCachedCurrentActiveElection();
+  const election = await db.election.findFirst({
+    where: {
+      is_active: true,
+      start_time: { lte: now },
+      end_time: { gte: now },
+    },
+    include: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          slug: true,
+          logoUrl: true,
+        },
+      },
+      candidates: { orderBy: { candidate_number: "asc" } },
+    },
+  });
+
   if (!election) throw new VoteError("ELECTION_NOT_FOUND");
   return election;
 }

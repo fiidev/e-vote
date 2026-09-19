@@ -32,11 +32,13 @@ export interface RateLimiter {
 export function createRateLimiter(
   options: RateLimiterOptions = {},
 ): RateLimiter {
+  const isTest =
+    process.env.NODE_ENV === "test" || process.env.VITEST === "true";
   const {
     maxAttemptsPerToken = Number(process.env.RATE_LIMIT_TOKEN_MAX || 5),
-    maxGlobalFailuresPerWindow = Number(
-      process.env.RATE_LIMIT_GLOBAL_MAX || 2000,
-    ),
+    maxGlobalFailuresPerWindow = isTest
+      ? 50
+      : Number(process.env.RATE_LIMIT_GLOBAL_MAX || 2000),
     windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000),
   } = options;
 
