@@ -46,3 +46,8 @@ next-env.d.ts
 .playwright-mcp/
 data-import/
 docs/
+
+# go artifacts
+/backend/api
+/backend/bin/
+

@@ -67,6 +67,29 @@ export async function getActiveElection(
     return cachedActiveElection.data;
   }
 
+  const goBackendUrl = process.env.GO_BACKEND_URL;
+  if (goBackendUrl && !isTest) {
+    try {
+      const url = new URL(`${goBackendUrl}/api/v1/elections/active`);
+      if (tokenCode) {
+        url.searchParams.set("token", tokenCode);
+      }
+      const res = await fetch(url.toString(), { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        const electionData: ElectionWithCandidates = {
+          ...data,
+          start_time: new Date(data.start_time),
+          end_time: new Date(data.end_time),
+        };
+        cachedActiveElection = { data: electionData, timestamp: nowMs };
+        return electionData;
+      }
+    } catch {
+      // Fallback ke Prisma jika koneksi microservice bermasalah
+    }
+  }
+
   const now = new Date();
 
   if (tokenCode) {
@@ -132,6 +155,27 @@ export async function verifyToken(
   input: VerifyTokenOutput,
 ): Promise<{ voterId: string; electionId: string }> {
   const token = input.token;
+  const isTest = process.env.NODE_ENV === "test";
+  const goBackendUrl = process.env.GO_BACKEND_URL;
+
+  if (goBackendUrl && !isTest) {
+    try {
+      const res = await fetch(`${goBackendUrl}/api/v1/auth/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        cache: "no-store",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new VoteError(body.error ?? "TOKEN_INVALID", body.message);
+      }
+      return { voterId: body.voterId, electionId: body.electionId };
+    } catch (err) {
+      if (err instanceof VoteError) throw err;
+      // Fallback ke Prisma jika microservice connection gagal
+    }
+  }
 
   // 1. Rate limit (per-token & global) — jangan sentuh DB kalau kena blok.
   if (rateLimiter.isTokenLocked(token)) throw new VoteError("TOKEN_LOCKED");
@@ -189,6 +233,33 @@ export async function castVote(input: {
   candidateId: CastVoteOutput["candidateId"];
 }): Promise<void> {
   const token = input.token;
+  const isTest = process.env.NODE_ENV === "test";
+  const goBackendUrl = process.env.GO_BACKEND_URL;
+
+  if (goBackendUrl && !isTest) {
+    try {
+      const res = await fetch(`${goBackendUrl}/api/v1/votes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Vote-Token": token,
+        },
+        body: JSON.stringify({
+          token,
+          candidateId: input.candidateId,
+        }),
+        cache: "no-store",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        throw new VoteError(body.error ?? "TOKEN_INVALID", body.message);
+      }
+      return;
+    } catch (err) {
+      if (err instanceof VoteError) throw err;
+      // Fallback ke Prisma jika microservice connection gagal
+    }
+  }
 
   if (rateLimiter.isTokenLocked(token)) throw new VoteError("TOKEN_LOCKED");
   if (rateLimiter.isGloballyThrottled()) throw new VoteError("RATE_LIMITED");

@@ -19,6 +19,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().optional(),
   BETTER_AUTH_SECRET: z.string().optional(),
   BETTER_AUTH_URL: z.string().optional(),
+  GO_BACKEND_URL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
