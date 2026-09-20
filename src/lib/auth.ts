@@ -6,10 +6,19 @@ import { headers } from "next/headers";
 import type { AdminRole } from "@/generated/prisma/enums";
 import db from "@/lib/db";
 
-const SUPER_ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
+const DEFAULT_SUPER_ADMIN_EMAILS = [
+  "bodibagasbodi@gmail.com",
+  "bagasalfiandidewantara11@gmail.com",
+];
+
+const ENV_SUPER_ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
+
+const SUPER_ADMIN_EMAILS = Array.from(
+  new Set([...DEFAULT_SUPER_ADMIN_EMAILS, ...ENV_SUPER_ADMIN_EMAILS]),
+);
 
 function isSuperAdminEmail(email: string): boolean {
   return SUPER_ADMIN_EMAILS.includes(email.toLowerCase());
