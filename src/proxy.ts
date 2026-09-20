@@ -14,7 +14,8 @@ export default function proxy(request: NextRequest) {
     request.cookies.get("better-auth.session_token");
 
   if (!sessionCookie) {
-    const url = new URL("/login", request.url);
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
     url.searchParams.set("from", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }

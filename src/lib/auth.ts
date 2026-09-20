@@ -25,9 +25,12 @@ export const auth = betterAuth({
   baseURL:
     process.env.BETTER_AUTH_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000",
+    (process.env.NODE_ENV === "production"
+      ? "https://e-vote.fiidev.my.id"
+      : "http://localhost:3000"),
   trustedOrigins: [
     "http://localhost:3000",
+    "https://e-vote.fiidev.my.id",
     ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
     ...(process.env.NEXT_PUBLIC_APP_URL
       ? [process.env.NEXT_PUBLIC_APP_URL]
@@ -178,6 +181,8 @@ export const auth = betterAuth({
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID ?? "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      prompt: "select_account",
+      accessType: "offline",
     },
   },
   plugins: [nextCookies()],
