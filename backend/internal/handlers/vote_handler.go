@@ -96,17 +96,7 @@ func (h *VoteHandler) CastVote(c *fiber.Ctx) error {
 	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
 	defer cancel()
 
-	// Eksekusi transaksi database secara atomik
-	tx, err := h.pool.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{
-			Error:   "INTERNAL_ERROR",
-			Message: "Gagal memulai transaksi voting.",
-		})
-	}
-	defer tx.Rollback(ctx)
-
-	// Jika session berasal dari raw token, verifikasi langsung di dalam transaksi
+	// Jika session berasal dari raw token, verifikasi metadata token terlebih dahulu
 	if tokenID == "" {
 		var isUsed bool
 		var startTime, endTime time.Time
@@ -117,9 +107,8 @@ func (h *VoteHandler) CastVote(c *fiber.Ctx) error {
 			FROM vote_tokens vt
 			JOIN elections e ON vt.election_id = e.election_id
 			WHERE vt.token_code = $1
-			FOR UPDATE OF vt
 		`
-		err := tx.QueryRow(ctx, qToken, rawToken).Scan(
+		err := h.pool.QueryRow(ctx, qToken, rawToken).Scan(
 			&tokenID,
 			&voterID,
 			&electionID,
@@ -148,14 +137,14 @@ func (h *VoteHandler) CastVote(c *fiber.Ctx) error {
 			})
 		}
 
-		now := time.Now()
-		if !isActive || now.Before(startTime) {
+		nowCheck := time.Now()
+		if !isActive || nowCheck.Before(startTime) {
 			return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{
 				Error:   "ELECTION_NOT_STARTED",
 				Message: "Pemilihan belum dimulai.",
 			})
 		}
-		if now.After(endTime) {
+		if nowCheck.After(endTime) {
 			return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{
 				Error:   "ELECTION_ENDED",
 				Message: "Pemilihan sudah berakhir.",
@@ -163,50 +152,37 @@ func (h *VoteHandler) CastVote(c *fiber.Ctx) error {
 		}
 	}
 
-	// 1. Verifikasi kandidat sah dan terdaftar pada pemilihan ini
-	var validCandID string
-	qCand := `SELECT candidate_id FROM candidates WHERE candidate_id = $1 AND election_id = $2 LIMIT 1`
-	if err := tx.QueryRow(ctx, qCand, candidateID, electionID).Scan(&validCandID); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{
-				Error:   "CANDIDATE_NOT_FOUND",
-				Message: "Kandidat tidak ditemukan.",
-			})
-		}
-		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{
-			Error:   "INTERNAL_ERROR",
-			Message: "Gagal memvalidasi kandidat.",
-		})
-	}
-
-	// 2. ATOMIC CLAIM: Update token is_used=true secara bersyarat WHERE is_used = false
+	// SINGLE-STATEMENT ATOMIC CTE:
+	// Memverifikasi kandidat, mengklaim token is_used=true, dan memasukkan suara
+	// hanya dalam 1 round-trip jaringan tanpa lock holding berkepanjangan.
 	now := time.Now()
-	qClaim := `
-		UPDATE vote_tokens
-		SET is_used = true, used_at = $1
-		WHERE token_id = $2 AND is_used = false
-	`
-	cmdTag, err := tx.Exec(ctx, qClaim, now, tokenID)
-	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{
-			Error:   "INTERNAL_ERROR",
-			Message: "Gagal mengklaim token suara.",
-		})
-	}
-	if cmdTag.RowsAffected() == 0 {
-		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{
-			Error:   "TOKEN_ALREADY_USED",
-			Message: "Token ini sudah digunakan untuk memilih.",
-		})
-	}
-
-	// 3. Catat surat suara ke tabel votes
 	voteID := uuid.New().String()
-	qInsertVote := `
-		INSERT INTO votes (vote_id, election_id, voter_id, candidate_id, voted_at)
-		VALUES ($1, $2, $3, $4, $5)
+
+	qVoteCTE := `
+		WITH valid_cand AS (
+			SELECT candidate_id FROM candidates WHERE candidate_id = $1 AND election_id = $2 LIMIT 1
+		),
+		claimed AS (
+			UPDATE vote_tokens
+			SET is_used = true, used_at = $3
+			WHERE token_id = $4 AND is_used = false AND EXISTS (SELECT 1 FROM valid_cand)
+			RETURNING token_id
+		),
+		inserted_vote AS (
+			INSERT INTO votes (vote_id, election_id, voter_id, candidate_id, voted_at)
+			SELECT $5, $2, $6, c.candidate_id, $3
+			FROM valid_cand c
+			WHERE EXISTS (SELECT 1 FROM claimed)
+			RETURNING vote_id
+		)
+		SELECT 
+			(SELECT count(*)::int FROM valid_cand) AS cand_count,
+			(SELECT count(*)::int FROM claimed) AS claimed_count,
+			(SELECT count(*)::int FROM inserted_vote) AS vote_count;
 	`
-	_, err = tx.Exec(ctx, qInsertVote, voteID, electionID, voterID, validCandID, now)
+
+	var candCount, claimedCount, voteCount int
+	err := h.pool.QueryRow(ctx, qVoteCTE, candidateID, electionID, now, tokenID, voteID, voterID).Scan(&candCount, &claimedCount, &voteCount)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // Unique violation
@@ -221,11 +197,17 @@ func (h *VoteHandler) CastVote(c *fiber.Ctx) error {
 		})
 	}
 
-	// 4. Commit transaksi
-	if err := tx.Commit(ctx); err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(models.ErrorResponse{
-			Error:   "INTERNAL_ERROR",
-			Message: "Gagal menyelesaikan proses voting.",
+	if candCount == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{
+			Error:   "CANDIDATE_NOT_FOUND",
+			Message: "Kandidat tidak ditemukan.",
+		})
+	}
+
+	if claimedCount == 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(models.ErrorResponse{
+			Error:   "TOKEN_ALREADY_USED",
+			Message: "Token ini sudah digunakan untuk memilih.",
 		})
 	}
 
@@ -244,7 +226,7 @@ func (h *VoteHandler) CastVote(c *fiber.Ctx) error {
 
 	// 6. Broadcast perubahan suara secara asinkron ke live stream SSE
 	if h.liveCountService != nil {
-		h.liveCountService.BroadcastVote(electionID, validCandID)
+		h.liveCountService.BroadcastVote(electionID, candidateID)
 	}
 
 	return c.JSON(models.CastVoteResponse{

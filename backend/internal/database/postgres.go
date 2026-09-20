@@ -15,8 +15,8 @@ func NewPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("gagal membaca konfigurasi database: %w", err)
 	}
 
-	// Tuning connection pool untuk kapasitas tinggi di Railway
-	config.MaxConns = 50
+	// Tuning connection pool untuk kapasitas tinggi di Railway / Prisma Accelerate
+	config.MaxConns = 25
 	config.MinConns = 5
 	config.MaxConnLifetime = 30 * time.Minute
 	config.MaxConnIdleTime = 5 * time.Minute
