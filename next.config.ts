@@ -21,15 +21,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  async rewrites() {
-    const goBackendUrl = process.env.GO_BACKEND_URL || "http://127.0.0.1:8080";
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${goBackendUrl}/api/v1/:path*`,
-      },
-    ];
-  },
 };
 
 export default nextConfig;
