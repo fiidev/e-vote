@@ -1,10 +1,32 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { cn } from "@/lib/cn";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const bricolage = localFont({
+  src: [
+    {
+      path: "./fonts/bricolage-grotesque-latin-400-normal.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/bricolage-grotesque-latin-700-normal.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-heading",
+  display: "swap",
+});
 
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL || "https://e-vote.fiidev.my.id";
@@ -101,7 +123,13 @@ export default function RootLayout({
   return (
     <html
       lang="id"
-      className={cn("h-full", "antialiased", "font-sans", inter.variable)}
+      className={cn(
+        "h-full",
+        "antialiased",
+        "font-sans",
+        inter.variable,
+        bricolage.variable,
+      )}
     >
       <body className="min-h-full flex flex-col">
         <script

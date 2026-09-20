@@ -59,10 +59,10 @@ export function VerifyForm() {
       <div className="relative w-full max-w-[1400px] min-h-[580px] sm:min-h-[720px] rounded-[32px] sm:rounded-[70px] overflow-hidden bg-orange-100 flex flex-col items-center justify-between p-6 sm:p-12 shadow-sm">
         <Image
           src="/images/illustration-2-4003-205.png"
-          alt=""
+          alt="Ilustrasi Voting"
           width={384}
           height={618}
-          priority
+          sizes="(max-width: 640px) 192px, (max-width: 1024px) 256px, 320px"
           className="absolute left-[-24px] sm:left-[-40px] bottom-0 w-48 sm:w-64 lg:w-80 h-auto object-cover opacity-25 sm:opacity-30 lg:opacity-40 pointer-events-none select-none z-0"
         />
 
