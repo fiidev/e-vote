@@ -51,3 +51,5 @@ docs/
 /backend/api
 /backend/bin/
 
+# test datasets & artifacts
+backend/scripts/tokens_*.json

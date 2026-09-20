@@ -6,19 +6,10 @@ import { headers } from "next/headers";
 import type { AdminRole } from "@/generated/prisma/enums";
 import db from "@/lib/db";
 
-const DEFAULT_SUPER_ADMIN_EMAILS = [
-  "bodibagasbodi@gmail.com",
-  "bagasalfiandidewantara11@gmail.com",
-];
-
-const ENV_SUPER_ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
+const SUPER_ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
-
-const SUPER_ADMIN_EMAILS = Array.from(
-  new Set([...DEFAULT_SUPER_ADMIN_EMAILS, ...ENV_SUPER_ADMIN_EMAILS]),
-);
 
 function isSuperAdminEmail(email: string): boolean {
   return SUPER_ADMIN_EMAILS.includes(email.toLowerCase());
@@ -34,12 +25,9 @@ export const auth = betterAuth({
   baseURL:
     process.env.BETTER_AUTH_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.NODE_ENV === "production"
-      ? "https://e-vote.fiidev.my.id"
-      : "http://localhost:3000"),
+    "http://localhost:3000",
   trustedOrigins: [
     "http://localhost:3000",
-    "https://e-vote.fiidev.my.id",
     ...(process.env.BETTER_AUTH_URL ? [process.env.BETTER_AUTH_URL] : []),
     ...(process.env.NEXT_PUBLIC_APP_URL
       ? [process.env.NEXT_PUBLIC_APP_URL]

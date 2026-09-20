@@ -20,7 +20,7 @@ function sanitizeRequest(request: Request): {
       ? `${forwardedProto}://${forwardedHost}`
       : process.env.NEXT_PUBLIC_APP_URL ||
         process.env.BETTER_AUTH_URL ||
-        "https://e-vote.fiidev.my.id";
+        "http://localhost:3000";
 
   const url = new URL(request.url);
   const rewrittenUrl = new URL(url.pathname + url.search, publicOrigin);
