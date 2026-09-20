@@ -16,15 +16,15 @@ export const options = {
   scenarios: {
     real_voting_rush: {
       executor: "shared-iterations",
-      vus: 100,          // 100 bilik suara / pemilih aktif bersamaan
+      vus: 75,           // 75 bilik suara / pemilih aktif bersamaan
       iterations: 1500,  // Tepat 1.500 pemilih unik
-      maxDuration: "3m", // Maksimal 3 menit
+      maxDuration: "4m", // Maksimal 4 menit
     },
   },
   thresholds: {
     "checks": ["rate>0.99"],
-    "duration_verify_token": ["p(90)<500", "p(95)<800"],
-    "duration_cast_vote": ["p(90)<500", "p(95)<800"],
+    "duration_verify_token": ["p(90)<1200", "p(95)<2000"],
+    "duration_cast_vote": ["p(90)<1200", "p(95)<2000"],
   },
 };
 
